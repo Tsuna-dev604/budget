@@ -57,6 +57,8 @@ async function onAuthReady(user) {
   document.getElementById('authLoading').style.display = '';
   await loadCloudState();
   document.getElementById('userBadge').textContent = currentUser.email;
+  const userBadgeSettings = document.getElementById('userBadgeSettings');
+  if (userBadgeSettings) userBadgeSettings.textContent = currentUser.email;
   document.getElementById('authOverlay').classList.add('hidden');
   document.body.classList.add('authed');
   updateCategChips();
@@ -111,4 +113,3 @@ async function initAuth() {
     }
   });
 }
-
