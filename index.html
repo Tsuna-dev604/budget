@@ -99,40 +99,92 @@
       <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
       <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
 
+      <!-- Ligne 1 : 5 KPI essentiels -->
       <div class="kpi-grid" id="kpiGrid">
-        <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value gold" id="kpi-net">—</div><div class="card-sub">Actifs − Passifs</div></div>
-        <div class="card card-sm"><div class="card-title">Capacité d'Épargne</div><div class="card-value green" id="kpi-epargne">—</div><div class="card-sub">Revenus − Dépenses / mois</div></div>
-        <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="kpi-comptes">—</div><div class="card-sub">Solde total</div></div>
-        <div class="card card-sm"><div class="card-title">Rendement Net Moyen</div><div class="card-value" id="kpi-rdmt">—</div><div class="card-sub">Pondéré par actif</div></div>
-      </div>
-
-      <!-- Liquidité split -->
-      <div class="grid-4" style="margin-bottom:16px">
-        <div class="card card-sm"><div class="card-title">Actifs Liquides</div><div class="card-value green" id="kpi-liquid">—</div><div class="card-sub">Livrets, cash</div></div>
-        <div class="card card-sm"><div class="card-title">Actifs Semi-liquides</div><div class="card-value gold" id="kpi-semiliquid">—</div><div class="card-sub">PEL, AV, PEA</div></div>
-        <div class="card card-sm"><div class="card-title">Actifs Illiquides</div><div class="card-value blue" id="kpi-illiquid">—</div><div class="card-sub">Immo, montres, art</div></div>
-        <div class="card card-sm"><div class="card-title">Revenus Locatifs</div><div class="card-value" id="kpi-loyers">—</div><div class="card-sub">Total loyers/mois</div></div>
-      </div>
-
-      <div class="grid-2" style="margin-bottom:16px">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Allocation du Patrimoine</span></div>
-          <div class="chart-wrap" style="height:200px"><canvas id="chartAlloc"></canvas></div>
-          <div id="allocList" style="margin-top:12px"></div>
+        <div class="card card-sm">
+          <div class="card-title">Patrimoine Net</div>
+          <div class="card-value gold" id="kpi-net">—</div>
+          <div class="card-sub" id="kpi-net-sub">—</div>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Stress Test Krach −30%</span></div>
-          <div class="stress-box">
-            <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Simulation d'une chute de 30% sur les actifs dynamiques</div>
-            <div id="stressResult" style="font-family:var(--font-mono);font-size:13px"></div>
-            <button class="btn btn-danger" style="margin-top:12px" onclick="runStressTest()">▶ Lancer le Stress Test</button>
+        <div class="card card-sm">
+          <div class="card-title">Variation 12 mois</div>
+          <div class="card-value" id="kpi-var12">—</div>
+          <div class="card-sub" id="kpi-var12-sub">—</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Capacité d'Épargne</div>
+          <div class="card-value green" id="kpi-epargne">—</div>
+          <div class="card-sub">Ce mois-ci</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Liquidités Disponibles</div>
+          <div class="card-value blue" id="kpi-liquid2">—</div>
+          <div class="card-sub">Livrets, cash, comptes</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Dettes Restantes</div>
+          <div class="card-value red" id="kpi-dette">—</div>
+          <div class="card-sub">Capital restant dû</div>
+        </div>
+      </div>
+
+      <!-- Ligne 2 : évolution du patrimoine -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <span class="card-title">Évolution du Patrimoine</span>
+          <div class="month-tabs" style="margin-bottom:0" id="periodeButtons">
+            <div class="month-tab periode-btn active" data-periode="1m" onclick="selectPeriode('1m')">1 mois</div>
+            <div class="month-tab periode-btn" data-periode="3m" onclick="selectPeriode('3m')">3 mois</div>
+            <div class="month-tab periode-btn" data-periode="6m" onclick="selectPeriode('6m')">6 mois</div>
+            <div class="month-tab periode-btn" data-periode="1a" onclick="selectPeriode('1a')">1 an</div>
+            <div class="month-tab periode-btn" data-periode="3a" onclick="selectPeriode('3a')">3 ans</div>
+            <div class="month-tab periode-btn" data-periode="5a" onclick="selectPeriode('5a')">5 ans</div>
+            <div class="month-tab periode-btn" data-periode="tout" onclick="selectPeriode('tout')">Tout</div>
           </div>
         </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--font-mono);font-size:11px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('net')"> <span style="color:var(--gold)">● Patrimoine net</span></label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('actifs')"> <span style="color:var(--green)">● Total actifs</span></label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('passifs')"> <span style="color:var(--red)">● Total dettes</span></label>
+        </div>
+        <div id="patrimoineChartWrap" class="chart-wrap" style="height:260px"><canvas id="chartPatrimoineEvol"></canvas></div>
+        <div id="patrimoineChartEmpty" class="empty-state" style="display:none">
+          <div class="empty-state-icon">📈</div>
+          <div class="empty-state-title">L'historique se construit</div>
+          <div class="empty-state-text">Chaque utilisation de l'application enregistre un instantané réel de votre patrimoine. Revenez dans quelques jours pour voir apparaître une courbe de tendance.</div>
+        </div>
       </div>
 
+      <!-- Ligne 3 : où va / où est mon argent -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px">
+            <span class="card-title">Où va mon argent ?</span>
+            <div class="month-tabs" style="margin-bottom:0">
+              <div class="month-tab dep-periode-btn active" data-dep-periode="mois" onclick="selectDepPeriode('mois')">Mois</div>
+              <div class="month-tab dep-periode-btn" data-dep-periode="trimestre" onclick="selectDepPeriode('trimestre')">Trimestre</div>
+              <div class="month-tab dep-periode-btn" data-dep-periode="annee" onclick="selectDepPeriode('annee')">Année</div>
+            </div>
+          </div>
+          <div id="depensesWidgetList"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Où est mon argent ?</span></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="chartAlloc"></canvas></div>
+          <div id="allocList" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Ligne 4 : flux du mois -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Flux du mois</span></div>
+        <div id="fluxMoisWrap"></div>
+      </div>
+
+      <!-- Ligne 5 : points à surveiller -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Projection sur 10 ans (versements inclus)</span></div>
-        <div class="chart-wrap" style="height:250px"><canvas id="chartProjection"></canvas></div>
+        <div class="card-header"><span class="card-title">Points à surveiller</span></div>
+        <div id="pointsSurveillerList"></div>
       </div>
     </section>
 
@@ -474,7 +526,7 @@
         <div class="empty-state">
           <div class="empty-state-icon">🧮</div>
           <div class="empty-state-title">Bientôt disponible</div>
-          <div class="empty-state-text">Cette page accueillera le simulateur patrimonial (scénarios prudent / central / dynamique), le simulateur d'achat immobilier et le simulateur d'assurance-vie, séparés de vos données réelles.</div>
+          <div class="empty-state-text">Cette page accueillera le simulateur patrimonial (scénarios prudent / central / dynamique, dont un test de résistance à une baisse des marchés), le simulateur d'achat immobilier et le simulateur d'assurance-vie — séparés de vos données réelles.</div>
         </div>
       </div>
     </section>
@@ -956,6 +1008,7 @@
 <script src="js/actifs.js"></script>
 <script src="js/passifs.js"></script>
 <script src="js/patrimoine.js"></script>
+<script src="js/synthese.js"></script>
 <script src="js/pea.js"></script>
 <script src="js/market-data.js"></script>
 <script src="js/salaire.js"></script>
