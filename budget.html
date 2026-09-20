@@ -1,0 +1,3204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Patrimoine & Immobilier</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0e10; --bg2: #111416; --bg3: #181b1e; --bg4: #1e2226;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #e8e6e1; --text2: #8a8680; --text3: #aaa8a4;
+  --gold: #c9a84c; --gold2: #e8c97a;
+  --green: #4caf78; --green2: #2d6e49;
+  --red: #c94c4c; --red2: #6e2d2d;
+  --blue: #4c8fc9; --purple: #9b59b6;
+  --radius: 8px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100}
+.logo{font-family:var(--font-display);font-size:20px;color:var(--gold);letter-spacing:.02em}
+.logo span{color:var(--text2);font-weight:400;font-size:13px;display:block;font-family:var(--font-mono);letter-spacing:.1em}
+.header-actions{display:flex;gap:10px}
+.btn{padding:8px 16px;border:1px solid var(--border2);background:transparent;color:var(--text2);border-radius:var(--radius);cursor:pointer;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;transition:all .2s;text-transform:uppercase}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn-gold{background:var(--gold);color:#0c0e10;border-color:var(--gold);font-weight:500}
+.btn-gold:hover{background:var(--gold2);border-color:var(--gold2);color:#0c0e10}
+.btn-danger{border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red2);border-color:var(--red);color:#fff}
+.btn-blue{border-color:var(--blue);color:var(--blue)}
+.btn-blue:hover{background:rgba(76,143,201,.15);color:var(--blue)}
+nav{display:flex;gap:2px;padding:0 32px;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+main{padding:32px;max-width:1400px;margin:0 auto}
+.section{display:none}
+.section.active{display:block}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.col-span-2{grid-column:span 2}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.card-sm{padding:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3)}
+.card-value{font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--text);line-height:1.1}
+.card-value.green{color:var(--green)}
+.card-value.red{color:var(--red)}
+.card-value.gold{color:var(--gold)}
+.card-value.blue{color:var(--blue)}
+.card-sub{font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)}
+td.highlight{color:var(--text);font-weight:500}
+td.green{color:var(--green);font-family:var(--font-mono)}
+td.red{color:var(--red);font-family:var(--font-mono)}
+td.gold{color:var(--gold);font-family:var(--font-mono)}
+td.blue{color:var(--blue);font-family:var(--font-mono)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg4)}
+.form-group{margin-bottom:16px}
+label{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px 14px;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--gold)}
+select option{background:var(--bg3)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.badge-green{background:var(--green2);color:var(--green)}
+.badge-red{background:var(--red2);color:var(--red)}
+.badge-gold{background:rgba(201,168,76,.15);color:var(--gold)}
+.badge-blue{background:rgba(76,143,201,.15);color:var(--blue)}
+.badge-purple{background:rgba(155,89,182,.15);color:var(--purple)}
+.badge-gray{background:rgba(255,255,255,.07);color:var(--text2)}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.stress-box{background:linear-gradient(135deg,rgba(201,76,76,.08),transparent);border:1px solid rgba(201,76,76,.3);border-radius:var(--radius);padding:20px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:28px;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto}
+.modal-title{font-family:var(--font-display);font-size:20px;margin-bottom:20px;color:var(--gold)}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.section-title{font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px}
+.section-subtitle{color:var(--text3);font-size:13px;margin-bottom:24px}
+.chart-wrap{position:relative;padding:16px 0}
+.notif{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--gold);color:var(--gold);padding:12px 20px;border-radius:var(--radius);font-family:var(--font-mono);font-size:12px;z-index:300;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.notif.show{opacity:1;transform:translateY(0)}
+.notif.error{border-color:var(--red);color:var(--red)}
+.alloc-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.alloc-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+.info-note{font-size:11px;color:var(--text3);font-family:var(--font-mono);background:rgba(201,168,76,.06);border-left:2px solid var(--gold);padding:8px 12px;border-radius:0 4px 4px 0;margin-top:8px}
+.row-actions{display:flex;gap:4px}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;transition:all .15s}
+/* ── AUTH ── */
+body:not(.authed) header, body:not(.authed) nav, body:not(.authed) main { display:none; }
+#authOverlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+#authOverlay.hidden{display:none}
+.auth-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:36px;width:400px;max-width:100%}
+.auth-logo{font-family:var(--font-display);font-size:24px;color:var(--gold);text-align:center;margin-bottom:4px}
+.auth-sub{font-family:var(--font-mono);font-size:11px;color:var(--text3);text-align:center;margin-bottom:24px;letter-spacing:.08em;text-transform:uppercase}
+.auth-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.auth-tab{flex:1;text-align:center;padding:10px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent}
+.auth-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.auth-msg{font-size:12px;font-family:var(--font-mono);margin-top:14px;min-height:16px;text-align:center}
+.auth-msg.error{color:var(--red)}
+.auth-msg.ok{color:var(--green)}
+.auth-loading{text-align:center;color:var(--text3);font-family:var(--font-mono);font-size:12px}
+.user-badge{font-family:var(--font-mono);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px;padding:0 6px}
+.icon-btn:hover{border-color:var(--gold);color:var(--gold)}
+.icon-btn.del:hover{border-color:var(--red);color:var(--red)}
+/* liquidity pills */
+.liq-liquid{background:rgba(76,175,120,.12);color:var(--green);border:1px solid rgba(76,175,120,.25)}
+.liq-illiquid{background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.2)}
+/* month tabs */
+.month-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+.month-tab{padding:5px 12px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s;color:var(--text3);text-transform:uppercase}
+.month-tab:hover{border-color:var(--gold);color:var(--gold)}
+.month-tab.active{background:var(--gold);color:#0c0e10;border-color:var(--gold)}
+/* recap toggle */
+.recap-toggle{padding:4px 12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .15s}
+.recap-toggle.active{background:var(--gold);color:#0c0e10}
+/* categ recap */
+.categ-bar-wrap{background:var(--bg4);border-radius:4px;height:6px;overflow:hidden;margin-top:4px}
+.categ-bar{height:100%;border-radius:4px;transition:width .4s}
+/* operation quick categ chips */
+.categ-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.categ-chip{padding:4px 10px;border:1px solid var(--border2);border-radius:20px;font-size:11px;font-family:var(--font-mono);cursor:pointer;transition:all .15s;color:var(--text3)}
+.categ-chip:hover,.categ-chip.sel{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+/* edit inline */
+.edit-highlight{border:1px solid var(--gold) !important;background:rgba(201,168,76,.06) !important}
+/* immobilier */
+.immo-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.immo-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.immo-prop-title{font-family:var(--font-display);font-size:18px;color:var(--gold)}
+.immo-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.immo-metric{background:var(--bg4);border-radius:6px;padding:10px 12px}
+.immo-metric-label{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.immo-metric-val{font-family:var(--font-mono);font-size:16px;font-weight:500}
+.tenant-row{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg4);border-radius:6px;margin-bottom:6px}
+.tenant-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tenant-status.actif{background:var(--green)}
+.tenant-status.parti{background:var(--text3)}
+.charge-row{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border)}
+.charge-row:last-child{border-bottom:none}
+.salary-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(76,175,120,.12);border:1px solid rgba(76,175,120,.25);border-radius:20px;padding:4px 12px;font-family:var(--font-mono);font-size:11px;color:var(--green)}
+.sub-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.sub-tab{padding:6px 16px;border:1px solid var(--border2);border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .15s;color:var(--text3);text-transform:uppercase}
+.sub-tab:hover{border-color:var(--gold);color:var(--gold)}
+.sub-tab.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+.sub-section{display:none}
+.sub-section.active{display:block}
+.mini-bar-wrap{background:var(--bg4);border-radius:3px;height:4px;overflow:hidden;margin-top:3px}
+.mini-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green2),var(--green))}
+.roi-positive{color:var(--green)}
+.roi-negative{color:var(--red)}
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr}
+  .immo-metrics{grid-template-columns:repeat(2,1fr)}
+  main{padding:16px}
+  nav{padding:0 16px}
+  header{padding:14px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ ÉCRAN DE CONNEXION ═══════ -->
+<div id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">Gestion Budget</div>
+    <div class="auth-sub">Accès privé — Supabase</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Connexion</div>
+      <div class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Créer un compte</div>
+    </div>
+    <div id="authFormWrap">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="vous@exemple.com">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitAuth()">
+      </div>
+      <button class="btn btn-gold" style="width:100%" id="authSubmitBtn" onclick="submitAuth()">Se connecter</button>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+    <div class="auth-loading" id="authLoading" style="display:none">Chargement de vos données…</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">Gestion Budget</div>
+  <div class="header-actions">
+    <span class="user-badge" id="userBadge"></span>
+    <button class="btn" onclick="exportData()">↓ Sauvegarde locale</button>
+    <button class="btn" onclick="document.getElementById('importFile').click()">↑ Charger JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn btn-danger" onclick="doSignOut()">Déconnexion</button>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active"  onclick="showSection('synthese',this)">⬡ Synthèse</div>
+  <div class="tab" onclick="showSection('budget',this)">⇄ Budget</div>
+  <div class="tab" onclick="showSection('comptes',this)">🏦 Comptes</div>
+  <div class="tab" onclick="showSection('actifs',this)">◈ Actifs &amp; Passifs</div>
+  <div class="tab" onclick="showSection('immobilier',this)">🏠 Immobilier</div>
+  <div class="tab" onclick="showSection('simu_pea',this)">◎ PEA &amp; CTO</div>
+  <div class="tab" onclick="showSection('diversification',this);renderDiversification()">⬡ Diversification</div>
+</nav>
+
+<main>
+
+<!-- ═══════ SYNTHÈSE ═══════ -->
+<section id="synthese" class="section active">
+  <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
+  <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
+
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value gold" id="kpi-net">—</div><div class="card-sub">Actifs − Passifs</div></div>
+    <div class="card card-sm"><div class="card-title">Capacité d'Épargne</div><div class="card-value green" id="kpi-epargne">—</div><div class="card-sub">Revenus − Dépenses / mois</div></div>
+    <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="kpi-comptes">—</div><div class="card-sub">Solde total</div></div>
+    <div class="card card-sm"><div class="card-title">Rendement Net Moyen</div><div class="card-value" id="kpi-rdmt">—</div><div class="card-sub">Pondéré par actif</div></div>
+  </div>
+
+  <!-- Liquidité split -->
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card card-sm"><div class="card-title">Actifs Liquides</div><div class="card-value green" id="kpi-liquid">—</div><div class="card-sub">Livrets, cash</div></div>
+    <div class="card card-sm"><div class="card-title">Actifs Semi-liquides</div><div class="card-value gold" id="kpi-semiliquid">—</div><div class="card-sub">PEL, AV, PEA</div></div>
+    <div class="card card-sm"><div class="card-title">Actifs Illiquides</div><div class="card-value blue" id="kpi-illiquid">—</div><div class="card-sub">Immo, montres, art</div></div>
+    <div class="card card-sm"><div class="card-title">Revenus Locatifs</div><div class="card-value" id="kpi-loyers">—</div><div class="card-sub">Total loyers/mois</div></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Allocation du Patrimoine</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartAlloc"></canvas></div>
+      <div id="allocList" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Stress Test Krach −30%</span></div>
+      <div class="stress-box">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Simulation d'une chute de 30% sur les actifs dynamiques</div>
+        <div id="stressResult" style="font-family:var(--font-mono);font-size:13px"></div>
+        <button class="btn btn-danger" style="margin-top:12px" onclick="runStressTest()">▶ Lancer le Stress Test</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Projection sur 10 ans (versements inclus)</span></div>
+    <div class="chart-wrap" style="height:250px"><canvas id="chartProjection"></canvas></div>
+  </div>
+</section>
+
+<!-- ═══════ BUDGET ═══════ -->
+<section id="budget" class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div><h2 class="section-title">Gestion du Budget</h2><p class="section-subtitle">Suivi mensuel · Récap annuel · Analyse par catégorie</p></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div id="salaryBadgeWrap"></div>
+      <button class="btn" onclick="openSalaireModal()">⚙ Salaire récurrent</button>
+      <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
+    </div>
+  </div>
+
+  <!-- KPIs budget -->
+  <div class="grid-3" style="margin-bottom:24px">
+    <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
+  </div>
+
+  <!-- Filtres -->
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <select id="filterBudgetType" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()">
+      <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option>
+    </select>
+    <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
+    </select>
+  </div>
+
+  <!-- Month tabs -->
+  <div class="month-tabs" id="monthTabs"></div>
+
+  <!-- Operations table -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="card-title">Opérations</span><span id="budgetMonthLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span></div>
+    <div id="depenseSelectionBar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--bg4);border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
+      <span style="color:var(--text2)">☑ <span id="depenseSelectionCount">0</span> dépense(s) cochée(s) — Total : <span id="depenseSelectionTotal" style="color:var(--red);font-weight:600">0 €</span></span>
+      <button class="icon-btn" onclick="clearDepenseSelection()" title="Tout décocher">✕ Tout décocher</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:34px"><input type="checkbox" id="checkAllDepenses" onchange="toggleAllVisibleDepenses(this.checked)" title="Cocher/décocher toutes les dépenses visibles"></th><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Compte</th><th>Type</th><th>Montant</th><th></th></tr></thead>
+        <tbody id="budgetTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Récap par catégorie -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">Dépenses &amp; Revenus par Catégorie</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="recapPeriodLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
+        <div style="display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden">
+          <div id="recapToggleYear" class="recap-toggle active" onclick="setRecapView('year')">Année</div>
+          <div id="recapToggleMonth" class="recap-toggle" onclick="setRecapView('month')">Mois sélect.</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:12px">Dépenses</div>
+        <div id="categRecapDep"></div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px">Revenus</div>
+        <div id="categRecapRev"></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════ COMPTES COURANTS ═══════ -->
+<section id="comptes" class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div><h2 class="section-title">🏦 Comptes Courants</h2><p class="section-subtitle">Soldes mis à jour automatiquement à chaque opération de Budget</p></div>
+    <button class="btn btn-gold" onclick="openAddCompte()">+ Nouveau compte</button>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:24px">
+    <div class="card card-sm"><div class="card-title">Solde Total</div><div class="card-value gold" id="cpt-total">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Nombre de comptes</div><div class="card-value" id="cpt-count">0</div></div>
+    <div class="card card-sm"><div class="card-title">Solde le plus bas</div><div class="card-value" id="cpt-min">—</div></div>
+  </div>
+
+  <div id="comptesList" class="grid-3"></div>
+
+  <div id="doublonsCard" class="card" style="margin-top:16px;display:none">
+    <div class="card-header"><span class="card-title">⚠ Doublons potentiels détectés</span></div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">
+      Ces actifs de la catégorie "💧 Liquide" (onglet Actifs &amp; Passifs) pourraient déjà représenter le solde d'un de vos comptes courants.
+      Pour éviter de compter cet argent deux fois dans le Patrimoine Net, convertis-les en Compte Courant (le solde devient le solde initial du compte) ou supprime le doublon.
+    </p>
+    <div id="doublonsList"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">Historique de tous les comptes</span></div>
+    <div class="info-note">💡 Chaque opération de Budget (revenu ou dépense) peut être rattachée à un compte. Le solde affiché ici = Solde initial + Revenus − Dépenses de ce compte. Le total de tes Comptes Courants est désormais inclus dans le Patrimoine Net et la Diversification.</div>
+  </div>
+</section>
+
+<!-- ═══════ ACTIFS & PASSIFS ═══════ -->
+<section id="actifs" class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div><h2 class="section-title">Actifs &amp; Passifs</h2><p class="section-subtitle">Inventaire patrimonial complet</p></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="openModal('modalPassif')">+ Passif</button>
+      <button class="btn btn-gold" onclick="openAddActif()">+ Actif</button>
+    </div>
+  </div>
+
+  <div class="grid-5" style="margin-bottom:16px">
+    <div class="card card-sm"><div class="card-title">Total Actifs</div><div class="card-value gold" id="totalActifs">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="totalComptesActifs">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Total Dettes</div><div class="card-value red" id="totalPassifs">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value" id="totalNet2">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Loyers / mois</div><div class="card-value" id="totalLoyers2">0 €</div></div>
+  </div>
+
+  <div class="info-note" style="margin-bottom:16px">★ Projections +1/5/10 ans incluent les versements mensuels (formule des annuités). ✏ Cliquez sur ✎ pour modifier un actif. 🏦 Le Patrimoine Net inclut désormais le solde de vos Comptes Courants (onglet dédié).</div>
+
+  <!-- Liquides -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">💧 Actifs Liquides — Livrets &amp; Cash</span>
+      <span class="badge badge-green">Disponible immédiatement</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+        <tbody id="actifLiqTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Semi-liquides -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔒 Actifs Semi-liquides — PEL, AV, PEA, Crypto</span>
+      <span class="badge badge-gold">Rachat sous conditions</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+        <tbody id="actifSemiTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Immobilier -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🏠 Actifs Immobiliers</span>
+      <span class="badge badge-blue">Illiquide</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Libellé</th><th>Valeur</th><th>Loyer/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Rendement Loc.</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+        <tbody id="actifImmTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Biens physiques -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">💎 Biens Physiques — Montres, Art, Voitures, Objets</span>
+      <span class="badge badge-purple">Actifs de collection</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Libellé</th><th>Sous-type</th><th>Valeur d'achat</th><th>Valeur actuelle</th><th>+/−</th><th>Évol. annuelle est.</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+        <tbody id="actifPhysTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Passifs -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">📋 Passifs — Dettes &amp; Crédits</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Libellé</th><th>Capital Restant Dû</th><th>Mensualité</th><th>Taux</th><th>Échéance</th><th></th></tr></thead>
+        <tbody id="passifTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ IMMOBILIER ═══════ -->
+<section id="immobilier" class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div><h2 class="section-title">🏠 Gestion Immobilière</h2><p class="section-subtitle">Rendement · Charges · Locataires · ROI</p></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="openLocataireModal()">+ Locataire</button>
+      <button class="btn" onclick="openChargeModal()">+ Charge</button>
+      <button class="btn btn-gold" onclick="openImmoActifModal()">+ Bien immobilier</button>
+    </div>
+  </div>
+
+  <!-- KPIs globaux immo -->
+  <div class="grid-5" style="margin-bottom:20px" id="immoKpiGrid">
+    <div class="card card-sm"><div class="card-title">Loyers Bruts/mois</div><div class="card-value gold" id="ikpi-loyers">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Charges Totales/mois</div><div class="card-value red" id="ikpi-charges">0 €</div></div>
+    <div class="card card-sm"><div class="card-title">Net avant impôts/mois</div><div class="card-value green" id="ikpi-net">0 €</div><div class="card-sub">Hors fiscalité IR</div></div>
+    <div class="card card-sm"><div class="card-title">Net après impôts/mois</div><div class="card-value" id="ikpi-net-apres">0 €</div><div class="card-sub">PS + IR estimés</div></div>
+    <div class="card card-sm"><div class="card-title">Valeur Patrimoine</div><div class="card-value gold" id="ikpi-valeur">0 €</div></div>
+  </div>
+
+  <!-- Sub-tabs -->
+  <div class="sub-tabs">
+    <div class="sub-tab active" onclick="showImmoTab('bien-list',this)">▦ Mes Biens</div>
+    <div class="sub-tab" onclick="showImmoTab('locataires',this)">👤 Locataires</div>
+    <div class="sub-tab" onclick="showImmoTab('charges-tab',this)">💰 Charges &amp; Taxes</div>
+    <div class="sub-tab" onclick="showImmoTab('rendement',this)">📊 Rendement &amp; ROI</div>
+  </div>
+
+  <!-- Biens -->
+  <div class="sub-section active" id="bien-list">
+    <div id="immoBiensList">
+      <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun bien immobilier. Ajoutez-en un ci-dessus ou ils apparaîtront ici depuis vos actifs.</div>
+    </div>
+  </div>
+
+  <!-- Locataires -->
+  <div class="sub-section" id="locataires">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Historique Locataires</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bien</th><th>Nom</th><th>Entrée</th><th>Sortie</th><th>Loyer CC</th><th>Caution</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="locatairesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charges -->
+  <div class="sub-section" id="charges-tab">
+    <div class="info-note" style="margin-bottom:16px">Les charges annuelles sont réparties mensuellement pour calculer le rendement net. Taxe foncière, assurances, eau, électricité, entretien…</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Toutes les Charges par Bien</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bien</th><th>Type de charge</th><th>Montant</th><th>Fréquence</th><th>Mois/an</th><th>Date</th><th></th></tr></thead>
+          <tbody id="chargesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rendement & ROI -->
+  <div class="sub-section" id="rendement">
+    <div id="rendementList">
+      <div style="text-align:center;padding:40px;color:var(--text3)">Ajoutez des biens pour voir les calculs de rendement.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PEA ═══════ -->
+<section id="simu_pea" class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+    <div><h2 class="section-title">PEA &amp; CTO — Portefeuille Titres</h2><p class="section-subtitle">Enveloppes fiscales · Frais réels · Cours en temps réel (API)</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" onclick="openApiSettingsModal()">⚙ Cours API</button>
+      <button class="btn btn-blue" onclick="refreshAllPeaCours()">🔄 Actualiser tous les cours</button>
+      <button class="btn" onclick="openAddPeaCompte()">+ Ajouter un compte</button>
+      <button class="btn btn-gold" onclick="openAddPeaTitre()">+ Ajouter une ligne</button>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="card card-sm"><div class="card-title">Total Investi</div><div class="card-value gold" id="pkpi-investi">0 €</div><div class="card-sub">Achat + frais (courtage, change, TTF)</div></div>
+    <div class="card card-sm"><div class="card-title">Valeur Actuelle</div><div class="card-value blue" id="pkpi-valeur">0 €</div><div class="card-sub">Aux derniers cours connus</div></div>
+    <div class="card card-sm"><div class="card-title">Plus/Moins-value</div><div class="card-value" id="pkpi-pv">0 €</div><div class="card-sub">Latente, brute de fiscalité</div></div>
+    <div class="card card-sm"><div class="card-title">Performance</div><div class="card-value" id="pkpi-perf">0 %</div><div class="card-sub">Sur capital investi</div></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Répartition du Portefeuille</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartPeaTitres"></canvas></div>
+      <div id="peaTitresList" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Répartition par Ligne — Détail</span></div>
+      <div id="peaTitresBreakdown" style="font-size:12px"></div>
+    </div>
+  </div>
+
+  <div class="info-note" style="margin-bottom:16px">
+    💡 <strong>PEA</strong> : plafond de versement 150 000 € (hors PEA-PME 225 000 €), exonération IR après 5 ans (PS 17,2% restants) — avant 5 ans, retrait = Flat Tax 30% + clôture. <strong>CTO</strong> : pas de plafond, Flat Tax (PFU) 30% sur les plus-values et dividendes dès le 1er euro, option barème progressif possible. Frais de change ~0,25-1% appliqués sur les titres hors zone EUR. TTF 0,4% sur les actions françaises de plus de 1 Md€ de capitalisation à l'achat.
+  </div>
+
+  <div id="peaComptesList">
+    <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun compte. Cliquez sur "+ Ajouter un compte" pour commencer.</div>
+  </div>
+</section>
+
+
+<!-- ═══════ DIVERSIFICATION ═══════ -->
+<section id="diversification" class="section">
+  <h2 class="section-title">Score de Diversification</h2>
+  <p class="section-subtitle">Analyse de la répartition géographique, sectorielle et par enveloppe fiscale de votre patrimoine</p>
+
+  <!-- Score global -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px" id="divKpiGrid">
+    <div class="card card-sm"><div class="card-title">Score Global</div><div class="card-value gold" id="divScore">—</div><div class="card-sub">Sur 100 pts</div></div>
+    <div class="card card-sm"><div class="card-title">Classes d'actifs</div><div class="card-value" id="divClasses">—</div><div class="card-sub">Indice Herfindahl</div></div>
+    <div class="card card-sm"><div class="card-title">Enveloppes fiscales</div><div class="card-value" id="divEnveloppes">—</div><div class="card-sub">Optimisation fiscale</div></div>
+    <div class="card card-sm"><div class="card-title">Liquidité</div><div class="card-value" id="divLiquidite">—</div><div class="card-sub">Ratio actifs liquides</div></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <!-- Jauge score + recommandations -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Jauge de Diversification</span></div>
+      <div id="divGauge" style="margin:12px 0"></div>
+      <hr class="divider">
+      <div class="card-title" style="margin-bottom:12px">Recommandations</div>
+      <div id="divRecos" style="font-size:13px;line-height:1.8"></div>
+    </div>
+    <!-- Donut classes d'actifs -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Répartition par Classe d'Actif</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartDivClasses"></canvas></div>
+      <div id="divClassesList" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Enveloppes fiscales -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Répartition Fiscale</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartDivFiscal"></canvas></div>
+      <div id="divFiscalList" style="margin-top:12px"></div>
+      <div class="info-note" style="margin-top:12px">
+        PEA : PS 17,2% après 5 ans | CTO : Flat Tax 30% | AV : Flat Tax 30% ou PS | Livrets : Exonéré
+      </div>
+    </div>
+    <!-- Matrice de risque -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Matrice Rendement / Risque</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartDivRisque"></canvas></div>
+      <div id="divRisqueNote" style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:8px"></div>
+    </div>
+  </div>
+</section>
+
+
+</main>
+
+<!-- ═══════════════════════ MODALS ═══════════════════════ -->
+
+<!-- Modal Compte Courant -->
+<div class="modal-overlay" id="modalCompte">
+  <div class="modal">
+    <div class="modal-title" id="compteModalTitle">Nouveau Compte</div>
+    <input type="hidden" id="cptEditId">
+    <div class="form-group"><label>Nom du compte</label><input type="text" id="cptLabel" placeholder="ex: Compte courant CIC, Compte joint..."></div>
+    <div class="form-group"><label>Banque / Établissement</label><input type="text" id="cptBanque" placeholder="ex: CIC, Boursorama..."></div>
+    <div class="form-group"><label>Solde initial (€)</label><input type="number" id="cptSoldeInitial" step="0.01" placeholder="0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="cptDeleteBtn" style="display:none" onclick="deleteCompte()">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalCompte')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Budget -->
+<div class="modal-overlay" id="modalBudget">
+  <div class="modal">
+    <div class="modal-title" id="budgetModalTitle">Nouvelle Opération</div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="bType" onchange="updateCategChips()">
+        <option value="revenu">Revenu</option><option value="depense">Dépense</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Catégorie</label>
+      <div class="categ-chips" id="categChips"></div>
+      <input type="text" id="bCateg" placeholder="Ou saisissez librement...">
+    </div>
+    <div class="form-group"><label>Libellé</label><input type="text" id="bLabel" placeholder="ex: Courses Monoprix, Loyer..."></div>
+    <div class="form-group">
+      <label>Compte associé</label>
+      <select id="bCompte"><option value="">— Aucun compte —</option></select>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant (€)</label><input type="number" id="bMontant" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="bDate"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalBudget')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveBudget()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Actif (générique) -->
+<div class="modal-overlay" id="modalActif">
+  <div class="modal">
+    <div class="modal-title" id="actifModalTitle">Nouvel Actif</div>
+    <input type="hidden" id="aEditId">
+
+    <div class="form-group">
+      <label>Catégorie d'actif</label>
+      <select id="aCategory" onchange="toggleActifFields()">
+        <option value="liquide">💧 Liquide — Livret A, LDD, Cash</option>
+        <option value="semiliquide">🔒 Semi-liquide — PEL, AV, PEA, Crypto</option>
+        <option value="immobilier">🏠 Immobilier</option>
+        <option value="physique">💎 Bien Physique — Montre, Art, Voiture...</option>
+      </select>
+    </div>
+
+    <div class="form-group"><label>Libellé</label><input type="text" id="aLabel" placeholder="ex: Livret A, Appartement Bordeaux..."></div>
+
+    <!-- Champs financiers (liquide/semiliquide/immo) -->
+    <div id="fieldsFinancier">
+      <div class="grid-2">
+        <div class="form-group"><label>Valeur actuelle (€)</label><input type="number" id="aValeur" placeholder="0"></div>
+        <div class="form-group"><label>Versement mensuel (€)</label><input type="number" id="aMensuel" value="0"></div>
+      </div>
+      <div id="fieldLoyer" style="display:none">
+        <div class="form-group"><label>Loyer mensuel perçu (€)</label><input type="number" id="aLoyer" value="0" placeholder="ex: 850"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Taux brut annuel (%)</label><input type="number" id="aTaux" step="0.01" placeholder="ex: 3.0"></div>
+        <div class="form-group" id="fieldFiscal">
+          <label>Régime fiscal</label>
+          <select id="aFiscal">
+            <option value="exonere">Exonéré (Livret A, LDD)</option>
+            <option value="ps">PS 17,2% (PEL>12 ans, PEA>5 ans)</option>
+            <option value="flat">Flat Tax 30% (CTO, PEL récent)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Champs biens physiques -->
+    <div id="fieldsPhysique" style="display:none">
+      <div class="form-group">
+        <label>Sous-type</label>
+        <select id="aSubtype">
+          <option value="montre">⌚ Montre</option>
+          <option value="art">🎨 Œuvre d'art</option>
+          <option value="voiture">🚗 Voiture</option>
+          <option value="moto">🏍 Moto</option>
+          <option value="bijou">💍 Bijou</option>
+          <option value="vin">🍷 Vin / Spiritueux</option>
+          <option value="autre">📦 Autre</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Prix d'achat (€)</label><input type="number" id="aAchat" placeholder="0"></div>
+        <div class="form-group"><label>Valeur actuelle (€)</label><input type="number" id="aValeurPhys" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label>Évolution annuelle estimée (%)</label><input type="number" id="aEvolPhys" step="0.1" placeholder="ex: 5 pour montres, -15 pour voitures"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalActif')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveActif()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Modifier Actif (opération rapide) -->
+<div class="modal-overlay" id="modalActifOp">
+  <div class="modal">
+    <div class="modal-title">Opération sur l'actif</div>
+    <div style="font-family:var(--font-mono);font-size:13px;color:var(--gold);margin-bottom:16px" id="opActifLabel"></div>
+    <div class="form-group">
+      <label>Type d'opération</label>
+      <select id="opType">
+        <option value="versement">💰 Versement (ajout)</option>
+        <option value="retrait">💸 Retrait (diminution)</option>
+        <option value="revalorisation">📈 Revalorisation (nouvelle valeur)</option>
+        <option value="taux">📊 Changer le taux</option>
+        <option value="mensuel">🔄 Modifier versement mensuel</option>
+      </select>
+    </div>
+    <div class="form-group"><label id="opMontantLabel">Montant (€)</label><input type="number" id="opMontant" placeholder="0"></div>
+    <div id="opDateWrap" class="form-group"><label>Date de l'opération</label><input type="date" id="opDate"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalActifOp')">Annuler</button>
+      <button class="btn btn-gold" onclick="applyActifOp()">Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Passif -->
+<div class="modal-overlay" id="modalPassif">
+  <div class="modal">
+    <div class="modal-title">Nouveau Passif / Dette</div>
+    <div class="form-group"><label>Libellé</label><input type="text" id="pLabel" placeholder="ex: Crédit immobilier..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Capital Restant Dû (€)</label><input type="number" id="pCRD" placeholder="0"></div>
+      <div class="form-group"><label>Mensualité (€)</label><input type="number" id="pMensualite" placeholder="0"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Taux nominal (%)</label><input type="number" id="pTaux" step="0.01" placeholder="ex: 1.35"></div>
+      <div class="form-group"><label>Date d'échéance</label><input type="date" id="pEcheance"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalPassif')">Annuler</button>
+      <button class="btn btn-gold" onclick="addPassif()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Salaire Récurrent -->
+<div class="modal-overlay" id="modalSalaire">
+  <div class="modal">
+    <div class="modal-title">💼 Salaire Récurrent</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--font-mono)">Le salaire sera automatiquement ajouté chaque mois à la date définie.</p>
+    <div class="form-group"><label>Libellé</label><input type="text" id="salLabel" value="Salaire net" placeholder="ex: Salaire net, Rémunération..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant mensuel (€)</label><input type="number" id="salMontant" placeholder="3 200" min="0" step="1"></div>
+      <div class="form-group"><label>Jour du mois (1-28)</label><input type="number" id="salJour" value="1" min="1" max="28"></div>
+    </div>
+    <div class="form-group"><label>Catégorie</label>
+      <select id="salCateg">
+        <option value="Salaire">Salaire</option>
+        <option value="Freelance">Freelance</option>
+        <option value="Prime">Prime</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Compte associé</label>
+      <select id="salCompte"><option value="">— Aucun compte —</option></select>
+    </div>
+    <div class="form-group"><label>Appliquer depuis (mois/année)</label>
+      <div class="grid-2">
+        <select id="salFromMonth">
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+        <input type="number" id="salFromYear" value="" placeholder="2025" min="2020" max="2035">
+      </div>
+    </div>
+    <div class="form-group"><label>Jusqu'à (mois/année, vide = indéfini)</label>
+      <div class="grid-2">
+        <select id="salToMonth">
+          <option value="">—</option>
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+        <input type="number" id="salToYear" placeholder="—" min="2020" max="2040">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteSalaire()" id="salDeleteBtn" style="display:none">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalSalaire')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveSalaire()">Enregistrer &amp; Générer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bien Immobilier (création/édition) -->
+<div class="modal-overlay" id="modalImmoActif">
+  <div class="modal">
+    <div class="modal-title" id="immoActifTitle">Nouveau Bien Immobilier</div>
+    <input type="hidden" id="immoEditActifId">
+    <div class="form-group"><label>Libellé</label><input type="text" id="immoLabel" placeholder="ex: Appartement Nantes T2, Studio Lyon..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Valeur du bien (€)</label><input type="number" id="immoValeur" placeholder="200 000"></div>
+      <div class="form-group"><label>Prix d'acquisition (€)</label><input type="number" id="immoAcquisition" placeholder="190 000" title="Prix d'achat + frais de notaire + travaux"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Loyer mensuel CC (€)</label><input type="number" id="immoLoyer" placeholder="850"></div>
+      <div class="form-group"><label>Capital emprunté (€)</label><input type="number" id="immoCreditCRD" placeholder="0" value="0"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Mensualité crédit (€)</label><input type="number" id="immoCreditMens" placeholder="0" value="0"></div>
+      <div class="form-group"><label>Taux appréciation annuelle (%)</label><input type="number" id="immoApprec" placeholder="2" step="0.1" value="2"></div>
+    </div>
+    <div class="form-group"><label>Régime fiscal</label>
+      <select id="immoFiscal">
+        <option value="nu">Nu — Revenus fonciers (IR + 17,2%)</option>
+        <option value="lmnp">LMNP — Micro-BIC (50% abattement)</option>
+        <option value="lmnp_reel">LMNP réel — Amortissement</option>
+        <option value="sci">SCI — IS 15%</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Adresse</label><input type="text" id="immoAdresse" placeholder="ex: 12 rue des Fleurs, 44000 Nantes"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalImmoActif')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveImmoBien()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Locataire -->
+<div class="modal-overlay" id="modalLocataire">
+  <div class="modal">
+    <div class="modal-title">👤 Entrée / Sortie Locataire</div>
+    <div class="form-group"><label>Bien immobilier</label>
+      <select id="locBienId"></select>
+    </div>
+    <div class="form-group"><label>Nom du locataire</label><input type="text" id="locNom" placeholder="ex: Dupont Jean"></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Date d'entrée</label><input type="date" id="locEntree"></div>
+      <div class="form-group"><label>Date de sortie (vide = actif)</label><input type="date" id="locSortie"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Loyer CC mensuel (€)</label><input type="number" id="locLoyer" placeholder="850"></div>
+      <div class="form-group"><label>Dépôt de garantie (€)</label><input type="number" id="locCaution" placeholder="850"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="locNotes" rows="2" placeholder="État des lieux, remarques..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalLocataire')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveLocataire()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Charge -->
+<div class="modal-overlay" id="modalCharge">
+  <div class="modal">
+    <div class="modal-title">💰 Ajouter une Charge</div>
+    <div class="form-group"><label>Bien immobilier</label>
+      <select id="chargeBienId"></select>
+    </div>
+    <div class="form-group"><label>Type de charge</label>
+      <select id="chargeType" onchange="updateChargeLabel()">
+        <option value="taxe_fonciere">🏛 Taxe foncière</option>
+        <option value="assurance_pno">🛡 Assurance PNO (propriétaire non occupant)</option>
+        <option value="assurance_loyers">📋 Assurance loyers impayés</option>
+        <option value="eau">💧 Eau</option>
+        <option value="electricite">⚡ Électricité</option>
+        <option value="gaz">🔥 Gaz</option>
+        <option value="internet">📡 Internet / Box</option>
+        <option value="copropriete">🏢 Charges de copropriété</option>
+        <option value="gestion">🔑 Frais d'agence / gestion</option>
+        <option value="entretien">🔧 Entretien / réparations</option>
+        <option value="travaux">🏗 Travaux</option>
+        <option value="comptable">📊 Frais comptable</option>
+        <option value="autre">📦 Autre</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Libellé précis</label><input type="text" id="chargeLabel" placeholder="ex: Taxe foncière 2024"></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant (€)</label><input type="number" id="chargeMontant" placeholder="0"></div>
+      <div class="form-group"><label>Fréquence</label>
+        <select id="chargeFreq">
+          <option value="mensuel">Mensuelle</option>
+          <option value="trimestriel">Trimestrielle</option>
+          <option value="annuel">Annuelle</option>
+          <option value="ponctuel">Ponctuelle / unique</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Date / Année de référence</label><input type="date" id="chargeDate"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalCharge')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveCharge()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Compte PEA -->
+<div class="modal-overlay" id="modalPeaCompte">
+  <div class="modal">
+    <div class="modal-title" id="peaCompteModalTitle">Nouveau Compte</div>
+    <input type="hidden" id="pcEditId">
+    <div class="form-group"><label>Type de compte</label>
+      <select id="pcType" onchange="togglePcPlafondField()">
+        <option value="PEA">PEA — Plan d'Épargne en Actions</option>
+        <option value="PEA-PME">PEA-PME</option>
+        <option value="CTO">CTO — Compte-Titres Ordinaire</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Nom du compte</label><input type="text" id="pcNom" placeholder="ex: PEA Boursorama, CTO Trade Republic..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Banque / Courtier</label><input type="text" id="pcBanque" placeholder="ex: Boursorama, CIC, Trade Republic..."></div>
+      <div class="form-group" id="pcPlafondWrap"><label>Plafond de versement (€)</label><input type="number" id="pcPlafond" value="150000" placeholder="150000"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Frais de courtage (%)</label><input type="number" id="pcCourtagePct" step="0.01" value="0.5" placeholder="ex: 0.5"></div>
+      <div class="form-group"><label>Droits de garde (%/an)</label><input type="number" id="pcGardePct" step="0.01" value="0" placeholder="ex: 0.4"></div>
+    </div>
+    <div class="info-note" id="pcFiscalNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deletePeaCompte()" id="pcDeleteBtn" style="display:none">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalPeaCompte')">Annuler</button>
+      <button class="btn btn-gold" onclick="savePeaCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ligne PEA/CTO -->
+<div class="modal-overlay" id="modalPeaTitre">
+  <div class="modal">
+    <div class="modal-title" id="peaTitreModalTitle">Nouvelle Ligne</div>
+    <input type="hidden" id="ptEditId">
+    <div class="form-group"><label>Compte</label><select id="ptCompteId"></select></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Nom du titre</label><input type="text" id="ptNom" placeholder="ex: LVMH, ETF World Amundi..."></div>
+      <div class="form-group"><label>Ticker / Symbole (pour cours auto)</label><input type="text" id="ptTicker" placeholder="ex: MC.PAR, AAPL, CW8.PAR"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Date d'achat</label><input type="date" id="ptDate"></div>
+      <div class="form-group"><label>Quantité</label><input type="number" id="ptQte" step="0.0001" min="0" placeholder="ex: 10"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Prix d'achat unitaire</label><input type="number" id="ptPrix" step="0.01" min="0" placeholder="ex: 120.50"></div>
+      <div class="form-group"><label>Devise</label>
+        <select id="ptDevise" onchange="toggleFxFraisField()">
+          <option value="EUR">EUR (€)</option>
+          <option value="USD">USD ($)</option>
+          <option value="GBP">GBP (£)</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Frais de courtage (€)</label><input type="number" id="ptFrais" step="0.01" min="0" value="0" placeholder="0"></div>
+      <div class="form-group" id="ptFxFraisWrap" style="display:none"><label>Frais de change (%)</label><input type="number" id="ptFxFrais" step="0.01" min="0" value="0.25" placeholder="ex: 0.25"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>TER — Frais annuels ETF (%)</label><input type="number" id="ptTer" step="0.01" min="0" value="0" placeholder="ex: 0.15"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;padding-bottom:10px">
+        <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="ptTtf" style="width:auto"> Assujetti TTF (0,4%)</label>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Cours actuel — optionnel</label><input type="number" id="ptCours" step="0.01" min="0" placeholder="Laisser vide = prix d'achat"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:10px">
+        <button type="button" class="btn btn-blue" style="width:100%" onclick="fetchPeaTitreCoursForm()">🔄 Récupérer le cours (API)</button>
+      </div>
+    </div>
+    <div id="ptCoursMeta" style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:-8px;margin-bottom:12px"></div>
+    <div class="info-note">💡 Renseigne un ticker (ex: MC.PAR pour LVMH sur Euronext Paris, AAPL pour Apple) et clique sur "Récupérer le cours" pour interroger l'API configurée. Sinon, saisis le cours manuellement — c'est ce cours qui sert à valoriser la ligne.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalPeaTitre')">Annuler</button>
+      <button class="btn btn-gold" onclick="savePeaTitre()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Paramètres API Cours -->
+<div class="modal-overlay" id="modalApiSettings">
+  <div class="modal">
+    <div class="modal-title">⚙ Cours en Temps Réel — Paramètres API</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--font-mono)">Clé API personnelle Alpha Vantage (gratuite sur alphavantage.co). Utilisée uniquement dans ton navigateur, stockée dans le State exporté en JSON. Quota gratuit ≈ 25 requêtes/jour, 5/minute.</p>
+    <div class="form-group"><label>Clé API Alpha Vantage</label><input type="text" id="settApiKey" placeholder="ex: A1B2C3D4E5F6G7H8"></div>
+    <div class="form-group"><label>Durée du cache local (minutes)</label><input type="number" id="settCacheTtl" value="15" min="1" placeholder="15"></div>
+    <div class="info-note">Sans clé API (ou si le quota est atteint / la requête échoue), mets simplement à jour le champ "Cours actuel" manuellement sur chaque ligne — l'application fonctionne intégralement sans API.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalApiSettings')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveApiSettings()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  STATE & CONSTANTS
+// ═══════════════════════════════════════
+let state = { budget: [], actifs: [], passifs: [], salaire: null, immoBiens: [], locataires: [], charges: [], priceHistory: [], comptes: [], peaComptes: [], peaTitres: [], settings: { apiKeyAlpha: '', cacheTtlMin: 15 } };
+
+const CATEG_DEPENSE = ['Alimentation','Restaurant','Bar / Café','Transport','Carburant','Pressing','Abonnement','Banque','Assurance','Loyer / Logement','Santé','Loisirs','Voyage','Shopping','Virement','Épargne','Autre'];
+const CATEG_REVENU  = ['Salaire','Freelance','Loyers perçus','Dividendes','Virement reçu','Prime','Remboursement','Autre'];
+
+const CATEG_COLORS = {
+  'Alimentation':'#4caf78','Restaurant':'#e8c97a','Bar / Café':'#c9a84c',
+  'Transport':'#4c8fc9','Carburant':'#6ba3d6','Pressing':'#9b59b6',
+  'Abonnement':'#e74c3c','Banque':'#8e44ad','Assurance':'#2980b9',
+  'Loyer / Logement':'#c0392b','Santé':'#27ae60','Loisirs':'#f39c12',
+  'Voyage':'#16a085','Shopping':'#d35400','Virement':'#7f8c8d',
+  'Épargne':'#2ecc71','Autre':'#95a5a6',
+  'Salaire':'#4caf78','Freelance':'#e8c97a','Loyers perçus':'#c9a84c',
+  'Dividendes':'#4c8fc9','Virement reçu':'#9b59b6','Prime':'#27ae60',
+  'Remboursement':'#f39c12'
+};
+
+let currentBudgetMonth = 'all';
+let opActifId = null;
+
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+const uid = () => Math.random().toString(36).slice(2,9);
+const today = () => new Date().toISOString().slice(0,10);
+const currentYear = () => new Date().getFullYear();
+
+function fmt(v, dec=2) {
+  if (v===undefined||v===null||isNaN(v)) return '—';
+  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v);
+}
+function fmtPct(v, dec=2) {
+  if (v===undefined||v===null||isNaN(v)) return '—';
+  return v.toFixed(dec)+' %';
+}
+function taxNet(brut, fiscal) {
+  if (fiscal==='exonere') return brut;
+  if (fiscal==='ps') return brut*(1-0.172);
+  if (fiscal==='flat') return brut*(1-0.30);
+  return brut;
+}
+function compoundWithContrib(vi, rAnnuel, nAnnees, mensuel) {
+  const rMois = rAnnuel/100/12, n = nAnnees*12;
+  if (rMois===0) return vi + mensuel*n;
+  return vi*Math.pow(1+rMois,n) + mensuel*((Math.pow(1+rMois,n)-1)/rMois);
+}
+function compound(vi, r, n) { return vi*Math.pow(1+r/100,n); }
+
+function recordPrice(actifId, valeur, date) {
+  if (!state.priceHistory) state.priceHistory = [];
+  // Évite les doublons à la même date pour le même actif
+  state.priceHistory = state.priceHistory.filter(p=>!(p.id===actifId && p.date===date));
+  state.priceHistory.push({id: actifId, date, valeur});
+}
+function fiscalLabel(f) {
+  const m = {exonere:'<span class="badge badge-green">Exonéré</span>',ps:'<span class="badge badge-blue">PS 17.2%</span>',flat:'<span class="badge badge-gold">Flat 30%</span>'};
+  return m[f]||'';
+}
+function notify(msg, err=false) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.className = 'notif show'+(err?' error':'');
+  setTimeout(()=>n.className='notif', 2800);
+}
+
+// ═══════════════════════════════════════
+//  SUPABASE — CONFIG, AUTH & SYNC CLOUD
+// ═══════════════════════════════════════
+// 1. Créez un projet gratuit sur https://supabase.com
+// 2. Récupérez l'URL et la clé "anon public" dans Project Settings > API
+// 3. Collez-les ci-dessous (ces valeurs sont PUBLIQUES par design chez Supabase :
+//    la protection des données se fait via les policies RLS côté base, pas en cachant la clé)
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';
+const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_PUBLIC';
+
+const sb = (SUPABASE_URL.includes('VOTRE-PROJET')) ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+let authMode = 'signin';
+let saveTimer = null;
+let isLoadingCloud = false;
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tabSignIn').classList.toggle('active', mode==='signin');
+  document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
+  document.getElementById('authSubmitBtn').textContent = mode==='signin' ? 'Se connecter' : 'Créer mon compte';
+  document.getElementById('authMsg').textContent = '';
+}
+
+function setAuthMsg(msg, kind) {
+  const el = document.getElementById('authMsg');
+  el.textContent = msg;
+  el.className = 'auth-msg' + (kind ? ' '+kind : '');
+}
+
+async function submitAuth() {
+  if (!sb) { setAuthMsg('Configuration Supabase manquante : renseignez SUPABASE_URL et SUPABASE_ANON_KEY dans le code.', 'error'); return; }
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) { setAuthMsg('Email et mot de passe requis.', 'error'); return; }
+  setAuthMsg('', '');
+  if (authMode === 'signin') {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { setAuthMsg(error.message, 'error'); return; }
+    await onAuthReady(data.user);
+  } else {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) { setAuthMsg(error.message, 'error'); return; }
+    if (data.session) { await onAuthReady(data.user); }
+    else setAuthMsg('Compte créé. Vérifiez votre email pour confirmer, puis connectez-vous.', 'ok');
+  }
+}
+
+async function doSignOut() {
+  if (saveTimer) clearTimeout(saveTimer);
+  if (sb) await sb.auth.signOut();
+  currentUser = null;
+  document.body.classList.remove('authed');
+  document.getElementById('authOverlay').classList.remove('hidden');
+  document.getElementById('authFormWrap').style.display = '';
+  document.getElementById('authLoading').style.display = 'none';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+}
+
+async function onAuthReady(user) {
+  currentUser = user;
+  document.getElementById('authFormWrap').style.display = 'none';
+  document.getElementById('authLoading').style.display = '';
+  await loadCloudState();
+  document.getElementById('userBadge').textContent = currentUser.email;
+  document.getElementById('authOverlay').classList.add('hidden');
+  document.body.classList.add('authed');
+  updateCategChips();
+  buildYearSelect();
+  renderAllInner();
+  if (state.budget.length===0 && state.actifs.length===0) {
+    notify('Compte vierge — importez votre fichier JSON de sauvegarde pour récupérer vos données');
+  }
+}
+
+async function loadCloudState() {
+  isLoadingCloud = true;
+  try {
+    const { data, error } = await sb.from('budget_data').select('data').eq('user_id', currentUser.id).maybeSingle();
+    if (error) { console.error(error); notify('Erreur de chargement cloud', true); return; }
+    if (data && data.data) {
+      state = { budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],comptes:[],peaComptes:[],peaTitres:[],settings:{apiKeyAlpha:'',cacheTtlMin:15}, ...data.data };
+    }
+    // Sinon : aucune donnée en base pour ce compte -> on part d'un état vide (state initial).
+  } finally {
+    isLoadingCloud = false;
+  }
+}
+
+function scheduleCloudSave() {
+  if (!sb || !currentUser || isLoadingCloud) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCloudState, 1200);
+}
+
+async function saveCloudState() {
+  if (!sb || !currentUser) return;
+  const { error } = await sb.from('budget_data').upsert({ user_id: currentUser.id, data: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) { console.error(error); notify('Échec de la synchronisation cloud', true); }
+}
+
+async function initAuth() {
+  if (!sb) {
+    // Pas de config Supabase : on affiche quand même le formulaire avec un message d'erreur explicite,
+    // pour ne jamais faire tourner l'app sans protection par login.
+    setAuthMsg('Configuration Supabase manquante : renseignez SUPABASE_URL et SUPABASE_ANON_KEY dans le code.', 'error');
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user) {
+    await onAuthReady(session.user);
+  }
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      document.body.classList.remove('authed');
+      document.getElementById('authOverlay').classList.remove('hidden');
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════
+function showSection(id, tab) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+  renderAll();
+}
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  const d = document.getElementById('bDate');
+  if (d && !d.value) d.value = today();
+  const od = document.getElementById('opDate');
+  if (od && !od.value) od.value = today();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});
+});
+
+// ═══════════════════════════════════════
+//  BUDGET — CATEG CHIPS
+// ═══════════════════════════════════════
+function updateCategChips() {
+  const type = document.getElementById('bType').value;
+  const list = type==='depense' ? CATEG_DEPENSE : CATEG_REVENU;
+  const chips = document.getElementById('categChips');
+  chips.innerHTML = list.map(c=>`<span class="categ-chip" onclick="selectChip(this,'${c}')">${c}</span>`).join('');
+}
+function selectChip(el, val) {
+  document.querySelectorAll('.categ-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('bCateg').value = val;
+}
+
+// ═══════════════════════════════════════
+//  BUDGET — CRUD
+// ═══════════════════════════════════════
+let editBudgetId = null;
+
+function openAddBudget() {
+  editBudgetId = null;
+  document.getElementById('budgetModalTitle').textContent = 'Nouvelle Opération';
+  ['bLabel','bCateg','bMontant'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bDate').value = today();
+  document.getElementById('bType').value = 'depense';
+  updateCategChips();
+  populateCompteSelects();
+  document.getElementById('bCompte').value = '';
+  openModal('modalBudget');
+}
+
+function saveBudget() {
+  const label    = document.getElementById('bLabel').value.trim();
+  const categ    = document.getElementById('bCateg').value.trim();
+  const montant  = parseFloat(document.getElementById('bMontant').value);
+  const type     = document.getElementById('bType').value;
+  const date     = document.getElementById('bDate').value;
+  const compteId = document.getElementById('bCompte').value||null;
+  if (!label||!montant||montant<=0){notify('Champs invalides',true);return;}
+  if (editBudgetId) {
+    const b = state.budget.find(x=>x.id===editBudgetId);
+    if (b) Object.assign(b,{label,categ,montant,type,date,compteId});
+    editBudgetId = null;
+  } else {
+    state.budget.push({id:uid(),label,categ,montant,type,date,compteId});
+  }
+  closeModal('modalBudget');
+  ['bLabel','bCateg','bMontant'].forEach(id=>document.getElementById(id).value='');
+  notify(editBudgetId?'Opération modifiée':'Opération enregistrée');
+  renderAll();
+}
+function editBudget(id) {
+  const b = state.budget.find(x=>x.id===id);
+  if (!b) return;
+  editBudgetId = id;
+  document.getElementById('budgetModalTitle').textContent = 'Modifier l\'opération';
+  document.getElementById('bType').value = b.type;
+  updateCategChips();
+  populateCompteSelects();
+  document.getElementById('bLabel').value   = b.label;
+  document.getElementById('bCateg').value   = b.categ||'';
+  document.getElementById('bMontant').value = b.montant;
+  document.getElementById('bDate').value    = b.date;
+  document.getElementById('bCompte').value  = b.compteId||'';
+  openModal('modalBudget');
+}
+function deleteBudget(id) {
+  if (!confirm('Supprimer cette opération ?')) return;
+  state.budget = state.budget.filter(b=>b.id!==id);
+  checkedDepenseIds.delete(id);
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  BUDGET — RENDER
+// ═══════════════════════════════════════
+function getYears() {
+  const y = [...new Set(state.budget.map(b=>b.date.slice(0,4)))].sort((a,b)=>b-a);
+  return y.length ? y : [String(currentYear())];
+}
+function buildYearSelect() {
+  const sel = document.getElementById('filterBudgetYear');
+  const years = getYears();
+  const cur = sel.value || String(currentYear());
+  sel.innerHTML = years.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${y}</option>`).join('');
+}
+function buildMonthTabs() {
+  const year = document.getElementById('filterBudgetYear').value || String(currentYear());
+  const months = [...new Set(state.budget.filter(b=>b.date.startsWith(year)).map(b=>b.date.slice(5,7)))].sort();
+  const container = document.getElementById('monthTabs');
+  const MOIS = ['','Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const tabs = [{v:'all',l:'Tous'},...months.map(m=>({v:m,l:MOIS[parseInt(m)]}))];
+  container.innerHTML = tabs.map(t=>`<div class="month-tab ${currentBudgetMonth===t.v?'active':''}" onclick="selectMonth('${t.v}',this)">${t.l}</div>`).join('');
+}
+function selectMonth(m, el) {
+  currentBudgetMonth = m;
+  document.querySelectorAll('.month-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderBudgetTable();
+}
+function renderBudgetTable() {
+  buildYearSelect();
+  buildMonthTabs();
+  const year  = document.getElementById('filterBudgetYear').value || String(currentYear());
+  const type  = document.getElementById('filterBudgetType').value;
+  const month = currentBudgetMonth;
+  const MOIS  = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  let items = state.budget.filter(b=>b.date.startsWith(year));
+  if (month!=='all') items = items.filter(b=>b.date.slice(5,7)===month);
+  if (type!=='all') items = items.filter(b=>b.type===type);
+
+  let rev=0, dep=0;
+  items.forEach(b=>{if(b.type==='revenu')rev+=b.montant;else dep+=b.montant;});
+  document.getElementById('bRevenu').textContent = fmt(rev);
+  document.getElementById('bDepense').textContent = fmt(dep);
+  const solde = rev-dep;
+  const s = document.getElementById('bSolde');
+  s.textContent = fmt(solde);
+  s.className = 'card-value '+(solde>=0?'green':'red');
+
+  const lbl = month==='all'?`Année ${year}`:`${MOIS[parseInt(month)]} ${year}`;
+  document.getElementById('budgetMonthLabel').textContent = lbl;
+
+  const tbody = document.getElementById('budgetTbody');
+  tbody.innerHTML = items.sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`
+    <tr>
+      <td>${b.type==='depense'?`<input type="checkbox" class="budget-check" data-id="${b.id}" ${checkedDepenseIds.has(b.id)?'checked':''} onchange="toggleDepenseCheck('${b.id}', this.checked)">`:''}</td>
+      <td class="highlight">${b.date}</td>
+      <td class="highlight">${b.label}</td>
+      <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${b.categ||'—'}</span></td>
+      <td>${b.compteId?`<span class="badge badge-blue">${compteLabel(b.compteId)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':'<span class="badge badge-red">Dépense</span>'}</td>
+      <td class="${b.type==='revenu'?'green':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="editBudget('${b.id}')">✎</button>
+        <button class="icon-btn del" onclick="deleteBudget('${b.id}')">✕</button>
+      </div></td>
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Aucune opération</td></tr>';
+
+  renderCategRecap(year);
+  updateDepenseSelectionBar();
+  syncCheckAllDepensesState();
+}
+
+// ═══════════════════════════════════════
+//  SÉLECTION DE DÉPENSES — total à la carte
+// ═══════════════════════════════════════
+let checkedDepenseIds = new Set();
+
+function toggleDepenseCheck(id, checked) {
+  if (checked) checkedDepenseIds.add(id); else checkedDepenseIds.delete(id);
+  updateDepenseSelectionBar();
+  syncCheckAllDepensesState();
+}
+
+function toggleAllVisibleDepenses(checked) {
+  document.querySelectorAll('.budget-check').forEach(cb => {
+    cb.checked = checked;
+    const id = cb.dataset.id;
+    if (checked) checkedDepenseIds.add(id); else checkedDepenseIds.delete(id);
+  });
+  updateDepenseSelectionBar();
+}
+
+function clearDepenseSelection() {
+  checkedDepenseIds.clear();
+  document.querySelectorAll('.budget-check').forEach(cb => cb.checked = false);
+  updateDepenseSelectionBar();
+  syncCheckAllDepensesState();
+}
+
+function syncCheckAllDepensesState() {
+  const all = document.getElementById('checkAllDepenses');
+  if (!all) return;
+  const boxes = [...document.querySelectorAll('.budget-check')];
+  if (!boxes.length) { all.checked = false; all.indeterminate = false; return; }
+  const checkedCount = boxes.filter(cb => cb.checked).length;
+  all.checked = checkedCount === boxes.length;
+  all.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+}
+
+function updateDepenseSelectionBar() {
+  const items = state.budget.filter(b => checkedDepenseIds.has(b.id) && b.type==='depense');
+  const total = items.reduce((s,b) => s + b.montant, 0);
+  const countEl = document.getElementById('depenseSelectionCount');
+  const totalEl = document.getElementById('depenseSelectionTotal');
+  if (countEl) countEl.textContent = items.length;
+  if (totalEl) totalEl.textContent = fmt(total);
+}
+let recapView = 'year'; // 'year' | 'month'
+function setRecapView(v) {
+  recapView = v;
+  document.getElementById('recapToggleYear').classList.toggle('active', v==='year');
+  document.getElementById('recapToggleMonth').classList.toggle('active', v==='month');
+  const year = document.getElementById('filterBudgetYear').value || String(currentYear());
+  renderCategRecap(year);
+}
+function renderCategRecap(year) {
+  const MOIS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  let items, periodLabel;
+  if (recapView === 'month' && currentBudgetMonth !== 'all') {
+    items = state.budget.filter(b=>b.date.startsWith(year) && b.date.slice(5,7)===currentBudgetMonth);
+    periodLabel = `${MOIS[parseInt(currentBudgetMonth)]} ${year}`;
+  } else {
+    items = state.budget.filter(b=>b.date.startsWith(year));
+    periodLabel = year;
+    if (recapView === 'month') periodLabel = `Tous — ${year}`;
+  }
+  document.getElementById('recapPeriodLabel').textContent = periodLabel;
+
+  const buildRecap = (type) => {
+    const map = {};
+    items.filter(b=>b.type===type).forEach(b=>{
+      const c = b.categ||'Autre';
+      map[c] = (map[c]||0)+b.montant;
+    });
+    const total = Object.values(map).reduce((a,v)=>a+v,0)||1;
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;align-items:center">
+          <span style="color:${CATEG_COLORS[c]||'var(--text3)'}">● ${c}</span>
+          <span style="font-family:var(--font-mono);white-space:nowrap">${fmt(v)} <span style="color:var(--text3)">(${fmtPct(v/total*100,0)})</span></span>
+        </div>
+        <div class="categ-bar-wrap"><div class="categ-bar" style="width:${v/total*100}%;background:${CATEG_COLORS[c]||'var(--text3)'}"></div></div>
+      </div>`).join('')||'<div style="color:var(--text3);font-size:12px">Aucune donnée pour cette période</div>';
+  };
+  document.getElementById('categRecapDep').innerHTML = buildRecap('depense');
+  document.getElementById('categRecapRev').innerHTML = buildRecap('revenu');
+}
+
+// ═══════════════════════════════════════
+//  COMPTES COURANTS — CRUD & CALCULS
+// ═══════════════════════════════════════
+function getSoldeCompte(compteId) {
+  const c = state.comptes.find(x=>x.id===compteId);
+  if (!c) return 0;
+  const mvts = state.budget.filter(b=>b.compteId===compteId);
+  const rev = mvts.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
+  const dep = mvts.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
+  return (c.soldeInitial||0) + rev - dep;
+}
+function compteLabel(id) {
+  const c = state.comptes.find(x=>x.id===id);
+  return c ? c.label : '—';
+}
+function populateCompteSelects() {
+  const options = '<option value="">— Aucun compte —</option>' +
+    state.comptes.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  ['bCompte','salCompte'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = options;
+    if ([...el.options].some(o=>o.value===cur)) el.value = cur;
+  });
+}
+function openAddCompte() {
+  document.getElementById('compteModalTitle').textContent = 'Nouveau Compte';
+  document.getElementById('cptEditId').value = '';
+  document.getElementById('cptLabel').value = '';
+  document.getElementById('cptBanque').value = '';
+  document.getElementById('cptSoldeInitial').value = '0';
+  document.getElementById('cptDeleteBtn').style.display = 'none';
+  openModal('modalCompte');
+}
+function openEditCompte(id) {
+  const c = state.comptes.find(x=>x.id===id);
+  if (!c) return;
+  document.getElementById('compteModalTitle').textContent = 'Modifier le compte';
+  document.getElementById('cptEditId').value = c.id;
+  document.getElementById('cptLabel').value = c.label;
+  document.getElementById('cptBanque').value = c.banque||'';
+  document.getElementById('cptSoldeInitial').value = c.soldeInitial||0;
+  document.getElementById('cptDeleteBtn').style.display = 'inline-block';
+  openModal('modalCompte');
+}
+function saveCompte() {
+  const editId = document.getElementById('cptEditId').value;
+  const label  = document.getElementById('cptLabel').value.trim();
+  const banque = document.getElementById('cptBanque').value.trim();
+  const soldeInitial = parseFloat(document.getElementById('cptSoldeInitial').value)||0;
+  if (!label){notify('Nom du compte requis',true);return;}
+  if (editId) {
+    const idx = state.comptes.findIndex(c=>c.id===editId);
+    if (idx>=0) Object.assign(state.comptes[idx],{label,banque,soldeInitial});
+  } else {
+    state.comptes.push({id:uid(),label,banque,soldeInitial});
+  }
+  closeModal('modalCompte');
+  notify(editId?'Compte modifié':'Compte enregistré');
+  renderAll();
+}
+function deleteCompte(idParam) {
+  const id = idParam || document.getElementById('cptEditId').value;
+  if (!id) return;
+  if (!confirm('Supprimer ce compte ? Les opérations liées resteront mais ne seront plus rattachées à un compte.')) return;
+  state.comptes = state.comptes.filter(c=>c.id!==id);
+  state.budget.forEach(b=>{if(b.compteId===id) b.compteId=null;});
+  closeModal('modalCompte');
+  notify('Compte supprimé');
+  renderAll();
+}
+function renderComptes() {
+  populateCompteSelects();
+  const container = document.getElementById('comptesList');
+  if (!state.comptes.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono);grid-column:1/-1">Aucun compte courant. Cliquez sur "+ Nouveau compte" pour commencer.</div>';
+    document.getElementById('cpt-total').textContent = fmt(0);
+    document.getElementById('cpt-count').textContent = '0';
+    document.getElementById('cpt-min').textContent = '—';
+    renderDoublonsCheck();
+    return;
+  }
+  const soldes = state.comptes.map(c=>({c, solde:getSoldeCompte(c.id)}));
+  const total = soldes.reduce((s,x)=>s+x.solde,0);
+  const minEntry = soldes.reduce((a,b)=>a.solde<=b.solde?a:b);
+
+  document.getElementById('cpt-total').textContent = fmt(total);
+  document.getElementById('cpt-count').textContent = state.comptes.length;
+  const minEl = document.getElementById('cpt-min');
+  minEl.textContent = `${fmt(minEntry.solde)} (${minEntry.c.label})`;
+  minEl.className = 'card-value '+(minEntry.solde<0?'red':minEntry.solde<200?'gold':'green');
+
+  container.innerHTML = soldes.map(({c,solde})=>{
+    const nbOps = state.budget.filter(b=>b.compteId===c.id).length;
+    const rev = state.budget.filter(b=>b.compteId===c.id&&b.type==='revenu').reduce((s,b)=>s+b.montant,0);
+    const dep = state.budget.filter(b=>b.compteId===c.id&&b.type==='depense').reduce((s,b)=>s+b.montant,0);
+    return `<div class="card">
+      <div class="card-header">
+        <span class="card-title">🏦 ${c.label}</span>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="openEditCompte('${c.id}')" title="Modifier">✎</button>
+          <button class="icon-btn del" onclick="deleteCompte('${c.id}')" title="Supprimer">✕</button>
+        </div>
+      </div>
+      ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">${c.banque}</div>`:''}
+      <div class="card-value ${solde<0?'red':'gold'}">${fmt(solde)}</div>
+      <div class="card-sub">Solde actuel · initial ${fmt(c.soldeInitial||0)}</div>
+      <hr class="divider">
+      <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px">
+        <span style="color:var(--green)">+${fmt(rev)}</span>
+        <span style="color:var(--red)">−${fmt(dep)}</span>
+        <span style="color:var(--text3)">${nbOps} opération(s)</span>
+      </div>
+    </div>`;
+  }).join('');
+  renderDoublonsCheck();
+}
+
+function renderDoublonsCheck() {
+  const card = document.getElementById('doublonsCard');
+  const list = document.getElementById('doublonsList');
+  const liquides = state.actifs.filter(a=>a.category==='liquide');
+  if (!liquides.length) { card.style.display='none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = liquides.map(a=>`
+    <div class="alloc-row">
+      <div><span class="alloc-dot" style="background:var(--gold)"></span>${a.label} <span style="color:var(--text3);font-family:var(--font-mono);font-size:11px;margin-left:6px">${fmt(a.valeur)}</span></div>
+      <div class="row-actions">
+        <button class="btn btn-blue" style="padding:4px 10px;font-size:10px" onclick="convertActifToCompte('${a.id}')">🔄 Convertir en Compte</button>
+        <button class="icon-btn del" onclick="deleteActif('${a.id}')" title="Supprimer ce doublon">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function convertActifToCompte(actifId) {
+  const a = state.actifs.find(x=>x.id===actifId);
+  if (!a) return;
+  if (!confirm(`Convertir "${a.label}" (${fmt(a.valeur)}) en Compte Courant ? Il sera retiré des Actifs Liquides et son solde deviendra le solde initial du nouveau compte.`)) return;
+  state.comptes.push({id:uid(), label:a.label, banque:'', soldeInitial:a.valeur||0});
+  state.actifs = state.actifs.filter(x=>x.id!==actifId);
+  notify('Actif converti en Compte Courant');
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  ACTIFS — MODAL
+// ═══════════════════════════════════════
+function toggleActifFields() {
+  const cat = document.getElementById('aCategory').value;
+  const isPhys = cat==='physique';
+  const isImmo = cat==='immobilier';
+  document.getElementById('fieldsFinancier').style.display = isPhys?'none':'block';
+  document.getElementById('fieldsPhysique').style.display  = isPhys?'block':'none';
+  document.getElementById('fieldLoyer').style.display      = isImmo?'block':'none';
+}
+function openAddActif() {
+  document.getElementById('actifModalTitle').textContent = 'Nouvel Actif';
+  document.getElementById('aEditId').value = '';
+  ['aLabel','aValeur','aMensuel','aLoyer','aTaux','aValeurPhys','aAchat','aEvolPhys'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = id==='aMensuel'||id==='aLoyer'?'0':'';
+  });
+  document.getElementById('aCategory').value = 'liquide';
+  document.getElementById('aFiscal').value = 'exonere';
+  toggleActifFields();
+  openModal('modalActif');
+}
+function openEditActif(id) {
+  const a = state.actifs.find(x=>x.id===id);
+  if (!a) return;
+  document.getElementById('actifModalTitle').textContent = 'Modifier l\'actif';
+  document.getElementById('aEditId').value = id;
+  document.getElementById('aCategory').value  = a.category||'liquide';
+  document.getElementById('aLabel').value     = a.label;
+  if (a.category==='physique') {
+    document.getElementById('aSubtype').value     = a.subtype||'autre';
+    document.getElementById('aAchat').value       = a.achat||0;
+    document.getElementById('aValeurPhys').value  = a.valeur||0;
+    document.getElementById('aEvolPhys').value    = a.evolPhys||0;
+  } else {
+    document.getElementById('aValeur').value  = a.valeur||0;
+    document.getElementById('aMensuel').value = a.mensuel||0;
+    document.getElementById('aLoyer').value   = a.loyer||0;
+    document.getElementById('aTaux').value    = a.taux||0;
+    document.getElementById('aFiscal').value  = a.fiscal||'exonere';
+  }
+  toggleActifFields();
+  openModal('modalActif');
+}
+function saveActif() {
+  const editId = document.getElementById('aEditId').value;
+  const cat    = document.getElementById('aCategory').value;
+  const label  = document.getElementById('aLabel').value.trim();
+  if (!label){notify('Libellé requis',true);return;}
+
+  let actif = {id: editId||uid(), label, category: cat};
+  if (cat==='physique') {
+    const achat = parseFloat(document.getElementById('aAchat').value)||0;
+    const val   = parseFloat(document.getElementById('aValeurPhys').value)||0;
+    if (val<=0&&achat<=0){notify('Valeur requise',true);return;}
+    actif = {...actif, subtype:document.getElementById('aSubtype').value, achat, valeur:val||achat, evolPhys:parseFloat(document.getElementById('aEvolPhys').value)||0};
+  } else {
+    const valeur  = parseFloat(document.getElementById('aValeur').value)||0;
+    const mensuel = parseFloat(document.getElementById('aMensuel').value)||0;
+    const loyer   = parseFloat(document.getElementById('aLoyer').value)||0;
+    const taux    = parseFloat(document.getElementById('aTaux').value)||0;
+    if (valeur<=0&&mensuel<=0){notify('Valeur ou versement requis',true);return;}
+    actif = {...actif, valeur, mensuel, loyer, taux, fiscal:document.getElementById('aFiscal').value};
+  }
+
+  if (editId) {
+    const idx = state.actifs.findIndex(x=>x.id===editId);
+    if (idx>=0) {
+      const prev = state.actifs[idx];
+      // Enregistre si la valeur a changé
+      if (prev.valeur !== actif.valeur) recordPrice(actif.id, actif.valeur, today());
+      state.actifs[idx] = actif;
+    }
+  } else {
+    state.actifs.push(actif);
+    // Point initial à la création
+    recordPrice(actif.id, actif.valeur || actif.achat || 0, today());
+  }
+  closeModal('modalActif');
+  notify(editId?'Actif modifié':'Actif enregistré');
+  renderAll();
+}
+function deleteActif(id) {
+  if (!confirm('Supprimer cet actif ?')) return;
+  state.actifs = state.actifs.filter(a=>a.id!==id);
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  ACTIFS — OPÉRATION RAPIDE
+// ═══════════════════════════════════════
+function openActifOp(id) {
+  opActifId = id;
+  const a = state.actifs.find(x=>x.id===id);
+  document.getElementById('opActifLabel').textContent = a?a.label:'';
+  document.getElementById('opMontant').value = '';
+  document.getElementById('opDate').value = today();
+  document.getElementById('opType').value = 'versement';
+  updateOpLabel();
+  openModal('modalActifOp');
+}
+function updateOpLabel() {
+  const t = document.getElementById('opType').value;
+  const labels = {versement:'Montant à ajouter (€)',retrait:'Montant à retirer (€)',revalorisation:'Nouvelle valeur totale (€)',taux:'Nouveau taux annuel brut (%)',mensuel:'Nouveau versement mensuel (€)'};
+  document.getElementById('opMontantLabel').textContent = labels[t]||'Valeur';
+  document.getElementById('opDateWrap').style.display = ['versement','retrait'].includes(t)?'block':'none';
+}
+document.getElementById('opType').addEventListener('change', updateOpLabel);
+
+function applyActifOp() {
+  const a = state.actifs.find(x=>x.id===opActifId);
+  if (!a) return;
+  const t = document.getElementById('opType').value;
+  const v = parseFloat(document.getElementById('opMontant').value)||0;
+  if (!v){notify('Valeur requise',true);return;}
+  const dateOp = document.getElementById('opDate').value || today();
+  switch(t) {
+    case 'versement':    a.valeur = (a.valeur||0)+v; break;
+    case 'retrait':      a.valeur = Math.max(0,(a.valeur||0)-v); break;
+    case 'revalorisation': a.valeur = v; break;
+    case 'taux':         a.taux = v; break;
+    case 'mensuel':      a.mensuel = v; break;
+  }
+  // Enregistre un point d'historique pour versement/retrait/revalorisation
+  if (['versement','retrait','revalorisation'].includes(t)) {
+    recordPrice(a.id, a.valeur, dateOp);
+  }
+  closeModal('modalActifOp');
+  notify('Opération appliquée');
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  ACTIFS — RENDER
+// ═══════════════════════════════════════
+function actifActions(a) {
+  return `<div class="row-actions">
+    <button class="icon-btn" onclick="openActifOp('${a.id}')" title="Versement / retrait / modif">⚡</button>
+    <button class="icon-btn" onclick="openEditActif('${a.id}')" title="Modifier">✎</button>
+    <button class="icon-btn del" onclick="deleteActif('${a.id}')" title="Supprimer">✕</button>
+  </div>`;
+}
+function financierRow(a) {
+  const rNet = taxNet(a.taux||0, a.fiscal||'exonere');
+  const m    = a.mensuel||0;
+  const v1   = compoundWithContrib(a.valeur||0, rNet, 1, m);
+  const v5   = compoundWithContrib(a.valeur||0, rNet, 5, m);
+  const v10  = compoundWithContrib(a.valeur||0, rNet, 10, m);
+  return `<tr>
+    <td class="highlight">${a.label}</td>
+    <td class="gold">${fmt(a.valeur)}</td>
+    <td style="color:var(--green);font-family:var(--font-mono)">${m>0?'+'+fmt(m)+'/m':'—'}</td>
+    <td>${fmtPct(a.taux||0)}</td>
+    <td>${fiscalLabel(a.fiscal||'exonere')}</td>
+    <td class="green">${fmtPct(rNet)}</td>
+    <td>${fmt(v1)}</td><td>${fmt(v5)}</td><td>${fmt(v10)}</td>
+    <td>${actifActions(a)}</td>
+  </tr>`;
+}
+function immoRow(a) {
+  const rNet = taxNet(a.taux||0, a.fiscal||'ps');
+  const loyer = a.loyer||0;
+  const rendLoc = a.valeur>0 ? (loyer*12/a.valeur*100) : 0;
+  const v1  = compoundWithContrib(a.valeur||0, rNet, 1, 0);
+  const v5  = compoundWithContrib(a.valeur||0, rNet, 5, 0);
+  const v10 = compoundWithContrib(a.valeur||0, rNet, 10, 0);
+  return `<tr>
+    <td class="highlight">${a.label}</td>
+    <td class="gold">${fmt(a.valeur)}</td>
+    <td style="color:var(--green);font-family:var(--font-mono)">${loyer>0?fmt(loyer)+'/m':'—'}</td>
+    <td>${fmtPct(a.taux||0)}</td>
+    <td>${fiscalLabel(a.fiscal||'ps')}</td>
+    <td class="${rendLoc>4?'green':'gold'}">${rendLoc>0?fmtPct(rendLoc):'—'}</td>
+    <td>${fmt(v1)}</td><td>${fmt(v5)}</td><td>${fmt(v10)}</td>
+    <td>${actifActions(a)}</td>
+  </tr>`;
+}
+const SUBTYPE_ICONS = {montre:'⌚',art:'🎨',voiture:'🚗',moto:'🏍',bijou:'💍',vin:'🍷',autre:'📦'};
+function physRow(a) {
+  const achat = a.achat||a.valeur||0;
+  const val   = a.valeur||0;
+  const diff  = val-achat;
+  const pct   = achat>0?(diff/achat*100):0;
+  const evol  = a.evolPhys||0;
+  const v5    = compound(val, evol, 5);
+  const v10   = compound(val, evol, 10);
+  return `<tr>
+    <td class="highlight">${a.label}</td>
+    <td>${SUBTYPE_ICONS[a.subtype]||'📦'} <span style="color:var(--text3);font-size:11px">${a.subtype||'autre'}</span></td>
+    <td>${fmt(achat)}</td>
+    <td class="gold">${fmt(val)}</td>
+    <td class="${diff>=0?'green':'red'}">${diff>=0?'+':''}${fmt(diff)} <span style="font-size:10px">(${pct>=0?'+':''}${pct.toFixed(1)}%)</span></td>
+    <td class="${evol>=0?'green':'red'}">${evol>=0?'+':''}${fmtPct(evol)}/an</td>
+    <td>${fmt(v5)}</td><td>${fmt(v10)}</td>
+    <td>${actifActions(a)}</td>
+  </tr>`;
+}
+
+function renderActifs() {
+  const liquides    = state.actifs.filter(a=>a.category==='liquide');
+  const semiliquid  = state.actifs.filter(a=>a.category==='semiliquide');
+  const immobilier  = state.actifs.filter(a=>a.category==='immobilier');
+  const physiques   = state.actifs.filter(a=>a.category==='physique');
+  const empty = (n) => `<tr><td colspan="${n}" style="text-align:center;color:var(--text3);padding:16px">Aucun actif</td></tr>`;
+
+  document.getElementById('actifLiqTbody').innerHTML  = liquides.map(financierRow).join('')||empty(10);
+  document.getElementById('actifSemiTbody').innerHTML = semiliquid.map(financierRow).join('')||empty(10);
+  document.getElementById('actifImmTbody').innerHTML  = immobilier.map(immoRow).join('')||empty(10);
+  document.getElementById('actifPhysTbody').innerHTML = physiques.map(physRow).join('')||empty(9);
+
+  const totalA = state.actifs.filter(a=>a.category!=='physique').reduce((s,a)=>s+(a.valeur||0),0)
+    + state.actifs.filter(a=>a.category==='physique').reduce((s,a)=>s+(a.valeur||0),0);
+  const totalC = getTotalComptes();
+  const totalP = state.passifs.reduce((s,p)=>s+(p.crd||0),0);
+  const totalL = state.actifs.filter(a=>a.category==='immobilier').reduce((s,a)=>s+(a.loyer||0),0);
+
+  document.getElementById('totalActifs').textContent  = fmt(totalA);
+  document.getElementById('totalPassifs').textContent = fmt(totalP);
+  document.getElementById('totalNet2').textContent    = fmt(totalA+totalC-totalP);
+  document.getElementById('totalLoyers2').textContent = fmt(totalL)+'/mois';
+  const cptEl = document.getElementById('totalComptesActifs');
+  if (cptEl) cptEl.textContent = fmt(totalC);
+}
+
+// ═══════════════════════════════════════
+//  PASSIFS
+// ═══════════════════════════════════════
+function addPassif() {
+  const label      = document.getElementById('pLabel').value.trim();
+  const crd        = parseFloat(document.getElementById('pCRD').value)||0;
+  const mensualite = parseFloat(document.getElementById('pMensualite').value)||0;
+  const taux       = parseFloat(document.getElementById('pTaux').value)||0;
+  const echeance   = document.getElementById('pEcheance').value;
+  if (!label||crd<=0){notify('Champs invalides',true);return;}
+  state.passifs.push({id:uid(),label,crd,mensualite,taux,echeance});
+  closeModal('modalPassif');
+  ['pLabel','pCRD','pMensualite','pTaux'].forEach(id=>document.getElementById(id).value='');
+  notify('Passif enregistré');
+  renderAll();
+}
+function deletePassif(id) {
+  if (!confirm('Supprimer ce passif ?')) return;
+  state.passifs = state.passifs.filter(p=>p.id!==id);
+  renderAll();
+}
+function renderPassifs() {
+  document.getElementById('passifTbody').innerHTML = state.passifs.length
+    ? state.passifs.map(p=>`<tr>
+        <td class="highlight">${p.label}</td>
+        <td class="red">${fmt(p.crd)}</td>
+        <td>${fmt(p.mensualite)}/mois</td>
+        <td>${fmtPct(p.taux)}</td>
+        <td>${p.echeance||'—'}</td>
+        <td><button class="icon-btn del" onclick="deletePassif('${p.id}')">✕</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Aucune dette</td></tr>';
+}
+
+// ═══════════════════════════════════════
+//  PATRIMOINE CALCS
+// ═══════════════════════════════════════
+function getTotalComptes() {
+  return state.comptes.reduce((s,c)=>s+getSoldeCompte(c.id),0);
+}
+function getPatrimoineNet() {
+  const totalA = state.actifs.reduce((s,a)=>s+(a.valeur||0),0);
+  const totalC = getTotalComptes();
+  const totalP = state.passifs.reduce((s,p)=>s+(p.crd||0),0);
+  return totalA+totalC-totalP;
+}
+function getEpargne() {
+  const rev = state.budget.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
+  const dep = state.budget.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
+  return {rev,dep,solde:rev-dep};
+}
+function getDepensesMensuelles() {
+  return state.budget.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
+}
+function getRdmtMoyen() {
+  const finActifs = state.actifs.filter(a=>a.category!=='physique');
+  const totalA = finActifs.reduce((s,a)=>s+(a.valeur||0),0);
+  if (!totalA) return 0;
+  return finActifs.reduce((s,a)=>s+(taxNet(a.taux||0,a.fiscal||'exonere')*(a.valeur||0)/totalA),0);
+}
+function getLiquidity() {
+  const liquid    = state.actifs.filter(a=>a.category==='liquide').reduce((s,a)=>s+(a.valeur||0),0) + getTotalComptes();
+  const semi      = state.actifs.filter(a=>a.category==='semiliquide').reduce((s,a)=>s+(a.valeur||0),0);
+  const illiquid  = state.actifs.filter(a=>['immobilier','physique'].includes(a.category)).reduce((s,a)=>s+(a.valeur||0),0);
+  const loyers    = state.actifs.filter(a=>a.category==='immobilier').reduce((s,a)=>s+(a.loyer||0),0);
+  return {liquid,semi,illiquid,loyers};
+}
+
+// ═══════════════════════════════════════
+//  SYNTHÈSE
+// ═══════════════════════════════════════
+let chartAlloc=null, chartProjection=null;
+
+function renderSynthese() {
+  const net   = getPatrimoineNet();
+  const {rev,dep,solde} = getEpargne();
+  const rdmt  = getRdmtMoyen();
+  const liq   = getLiquidity();
+
+  document.getElementById('kpi-net').textContent    = fmt(net);
+  const ep = document.getElementById('kpi-epargne');
+  ep.textContent  = fmt(solde);
+  ep.className    = 'card-value '+(solde>=0?'green':'red');
+  document.getElementById('kpi-rdmt').textContent   = fmtPct(rdmt);
+  document.getElementById('lastUpdated').textContent= 'Dernière mise à jour : '+new Date().toLocaleString('fr-FR');
+
+  document.getElementById('kpi-liquid').textContent    = fmt(liq.liquid);
+  document.getElementById('kpi-semiliquid').textContent= fmt(liq.semi);
+  document.getElementById('kpi-illiquid').textContent  = fmt(liq.illiquid);
+  document.getElementById('kpi-loyers').textContent    = fmt(liq.loyers)+'/mois';
+  document.getElementById('kpi-comptes').textContent   = fmt(getTotalComptes());
+
+  // Allocation doughnut
+  if (chartAlloc){chartAlloc.destroy();chartAlloc=null;}
+  const groups = {liquide:0,semiliquide:0,immobilier:0,physique:0};
+  state.actifs.forEach(a=>groups[a.category||'liquide']+=(a.valeur||0));
+  const CAT_LABELS = {liquide:'Liquide',semiliquide:'Semi-liquide',immobilier:'Immobilier',physique:'Physique'};
+  const CAT_COLORS = {liquide:'#4caf78',semiliquide:'#c9a84c',immobilier:'#4c8fc9',physique:'#9b59b6'};
+  const labels=[],vals=[],bgs=[];
+  Object.entries(groups).forEach(([k,v])=>{if(v>0){labels.push(CAT_LABELS[k]);vals.push(v);bgs.push(CAT_COLORS[k]);}});
+  if (vals.length>0) {
+    chartAlloc = new Chart(document.getElementById('chartAlloc').getContext('2d'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:vals,backgroundColor:bgs,borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)}`}}},cutout:'68%'}
+    });
+  }
+  const totalA = vals.reduce((a,v)=>a+v,0)||1;
+  document.getElementById('allocList').innerHTML = labels.map((l,i)=>`
+    <div class="alloc-row">
+      <div><span class="alloc-dot" style="background:${bgs[i]}"></span>${l}</div>
+      <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(vals[i]/totalA*100,0)} <span style="color:var(--text3);margin-left:8px">${fmt(vals[i])}</span></div>
+    </div>`).join('')||'<div style="color:var(--text3);font-size:13px">Aucun actif</div>';
+
+  // Projection 10 ans
+  if (chartProjection){chartProjection.destroy();chartProjection=null;}
+  const infl = 2.5; // Taux d'inflation par défaut (module FIRE retiré)
+  const years = Array.from({length:11},(_,i)=>i);
+  const totalComptesProj = getTotalComptes();
+  const projData = years.map(y=>state.actifs.reduce((s,a)=>{
+    if (a.category==='physique') return s+compound(a.valeur||0,a.evolPhys||0,y);
+    return s+compoundWithContrib(a.valeur||0,taxNet(a.taux||0,a.fiscal||'exonere'),y,a.mensuel||0);
+  },0)+totalComptesProj);
+  const inflData = years.map((y,i)=>projData[i]/Math.pow(1+infl/100,y));
+  chartProjection = new Chart(document.getElementById('chartProjection').getContext('2d'),{
+    type:'line',
+    data:{labels:years.map(y=>y===0?'Auj.':`+${y}a`),datasets:[
+      {label:'Valeur Nominale',data:projData,borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,.08)',tension:.4,fill:true,borderWidth:2,pointRadius:3},
+      {label:'Valeur Réelle',data:inflData,borderColor:'#4c8fc9',backgroundColor:'rgba(76,143,201,.06)',tension:.4,fill:true,borderWidth:2,borderDash:[6,3],pointRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8a8680',font:{family:'DM Mono',size:11}}},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5a5854',font:{family:'DM Mono',size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5a5854',font:{family:'DM Mono',size:10},callback:v=>fmt(v)}}}}
+  });
+}
+
+// ═══════════════════════════════════════
+//  STRESS TEST
+// ═══════════════════════════════════════
+function runStressTest() {
+  const dynTotal = state.actifs.filter(a=>a.category==='semiliquide').reduce((s,a)=>s+(a.valeur||0),0);
+  const loss = dynTotal*0.30;
+  const netBefore = getPatrimoineNet();
+  const netAfter  = netBefore-loss;
+  const impactPct = netBefore>0?(loss/netBefore*100):0;
+  document.getElementById('stressResult').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;margin-bottom:4px">Perte simulée</div><div style="color:var(--red);font-size:18px">−${fmt(loss)}</div></div>
+      <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;margin-bottom:4px">Patrimoine après krach</div><div style="color:var(--text);font-size:18px">${fmt(netAfter)}</div></div>
+      <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;margin-bottom:4px">Patrimoine avant krach</div><div style="color:var(--text3);font-size:16px">${fmt(netBefore)}</div></div>
+      <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;margin-bottom:4px">Impact sur le patrimoine</div><div style="color:var(--red);font-size:16px">−${fmtPct(impactPct)}</div></div>
+    </div>`;
+  notify('Stress test effectué');
+}
+
+// ═══════════════════════════════════════
+//  PEA & CTO — COMPTES, FRAIS, FISCALITÉ, PORTEFEUILLE RÉEL
+// ═══════════════════════════════════════
+let chartPeaTitres = null;
+const TTF_RATE = 0.004; // Taxe sur les Transactions Financières (actions FR > 1 Md€ cap.)
+
+function compteTypeLabel(t) {
+  return {PEA:'PEA', 'PEA-PME':'PEA-PME', CTO:'CTO'}[t]||t;
+}
+
+// ── Ancienneté & fiscalité PEA ──
+function peaAncienneteAns(compteId) {
+  const titres = state.peaTitres.filter(t=>t.compteId===compteId);
+  if (!titres.length) return 0;
+  const firstDate = titres.reduce((min,t)=>t.date<min?t.date:min, titres[0].date);
+  const diffMs = new Date() - new Date(firstDate);
+  return diffMs / (1000*60*60*24*365.25);
+}
+function getCompteFiscalInfo(compte) {
+  if (!compte) return {rate:0.30, label:'—'};
+  if (compte.type==='CTO') return {rate:0.30, label:'Flat Tax (PFU) 30% dès le 1er €'};
+  // PEA / PEA-PME
+  const anciennete = peaAncienneteAns(compte.id);
+  if (anciennete>=5) return {rate:0.172, label:`PS 17,2% seul (PEA > 5 ans, ancienneté ${anciennete.toFixed(1)} ans)`};
+  return {rate:0.30, label:`Flat Tax 30% (PEA < 5 ans, ancienneté ${anciennete.toFixed(1)} ans — clôture = perte des avantages)`};
+}
+
+function togglePcPlafondField() {
+  const type = document.getElementById('pcType').value;
+  document.getElementById('pcPlafondWrap').style.display = type==='CTO'?'none':'block';
+  document.getElementById('pcPlafond').value = type==='PEA-PME'?225000:150000;
+  const note = document.getElementById('pcFiscalNote');
+  note.textContent = type==='CTO'
+    ? 'CTO : pas de plafond de versement. Flat Tax (PFU) 30% sur plus-values et dividendes dès le 1er euro (option barème progressif possible en déclaration de revenus).'
+    : 'PEA : exonération d\'impôt sur le revenu après 5 ans de détention (seuls les 17,2% de prélèvements sociaux restent dus). Retrait avant 5 ans = clôture du plan + Flat Tax 30%.';
+}
+
+function populatePeaCompteSelect() {
+  const sel = document.getElementById('ptCompteId');
+  if (!sel) return;
+  sel.innerHTML = state.peaComptes.map(c=>`<option value="${c.id}">${c.nom} (${compteTypeLabel(c.type)})</option>`).join('')
+    || '<option value="">— Aucun compte —</option>';
+}
+
+function toggleFxFraisField() {
+  const devise = document.getElementById('ptDevise').value;
+  document.getElementById('ptFxFraisWrap').style.display = devise==='EUR'?'none':'block';
+}
+
+function openAddPeaCompte() {
+  document.getElementById('peaCompteModalTitle').textContent = 'Nouveau Compte';
+  document.getElementById('pcEditId').value = '';
+  document.getElementById('pcType').value = 'PEA';
+  document.getElementById('pcNom').value = '';
+  document.getElementById('pcBanque').value = '';
+  document.getElementById('pcPlafond').value = '150000';
+  document.getElementById('pcCourtagePct').value = '0.5';
+  document.getElementById('pcGardePct').value = '0';
+  document.getElementById('pcDeleteBtn').style.display = 'none';
+  togglePcPlafondField();
+  openModal('modalPeaCompte');
+}
+function openEditPeaCompte(id) {
+  const c = state.peaComptes.find(x=>x.id===id);
+  if (!c) return;
+  document.getElementById('peaCompteModalTitle').textContent = 'Modifier le compte';
+  document.getElementById('pcEditId').value = c.id;
+  document.getElementById('pcType').value = c.type||'PEA';
+  document.getElementById('pcNom').value = c.nom;
+  document.getElementById('pcBanque').value = c.banque||'';
+  document.getElementById('pcPlafond').value = c.plafond||150000;
+  document.getElementById('pcCourtagePct').value = c.courtagePct!==undefined?c.courtagePct:0.5;
+  document.getElementById('pcGardePct').value = c.gardePct!==undefined?c.gardePct:0;
+  document.getElementById('pcDeleteBtn').style.display = 'inline-block';
+  togglePcPlafondField();
+  document.getElementById('pcPlafond').value = c.plafond||150000;
+  openModal('modalPeaCompte');
+}
+function savePeaCompte() {
+  const editId  = document.getElementById('pcEditId').value;
+  const type    = document.getElementById('pcType').value;
+  const nom     = document.getElementById('pcNom').value.trim();
+  const banque  = document.getElementById('pcBanque').value.trim();
+  const plafond = type==='CTO' ? 0 : (parseFloat(document.getElementById('pcPlafond').value)||150000);
+  const courtagePct = parseFloat(document.getElementById('pcCourtagePct').value)||0;
+  const gardePct = parseFloat(document.getElementById('pcGardePct').value)||0;
+  if (!nom){notify('Nom du compte requis',true);return;}
+  if (editId) {
+    const c = state.peaComptes.find(x=>x.id===editId);
+    if (c) Object.assign(c,{type,nom,banque,plafond,courtagePct,gardePct});
+  } else {
+    state.peaComptes.push({id:uid(),type,nom,banque,plafond,courtagePct,gardePct});
+  }
+  closeModal('modalPeaCompte');
+  notify(editId?'Compte modifié':'Compte ajouté');
+  renderPeaPortefeuille();
+}
+function deletePeaCompte() {
+  const id = document.getElementById('pcEditId').value;
+  if (!id) return;
+  if (!confirm('Supprimer ce compte et toutes ses lignes ?')) return;
+  state.peaComptes = state.peaComptes.filter(c=>c.id!==id);
+  state.peaTitres  = state.peaTitres.filter(t=>t.compteId!==id);
+  closeModal('modalPeaCompte');
+  notify('Compte supprimé');
+  renderPeaPortefeuille();
+}
+
+function openAddPeaTitre(compteId) {
+  if (!state.peaComptes.length) {
+    notify('Créez d\'abord un compte PEA ou CTO',true);
+    openAddPeaCompte();
+    return;
+  }
+  document.getElementById('peaTitreModalTitle').textContent = 'Nouvelle Ligne';
+  document.getElementById('ptEditId').value = '';
+  populatePeaCompteSelect();
+  if (compteId) document.getElementById('ptCompteId').value = compteId;
+  ['ptNom','ptTicker','ptQte','ptPrix','ptCours'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ptFrais').value = '0';
+  document.getElementById('ptFxFrais').value = '0.25';
+  document.getElementById('ptTer').value = '0';
+  document.getElementById('ptTtf').checked = false;
+  document.getElementById('ptDevise').value = 'EUR';
+  document.getElementById('ptDate').value = today();
+  document.getElementById('ptCoursMeta').textContent = '';
+  toggleFxFraisField();
+  openModal('modalPeaTitre');
+}
+function openEditPeaTitre(id) {
+  const t = state.peaTitres.find(x=>x.id===id);
+  if (!t) return;
+  document.getElementById('peaTitreModalTitle').textContent = 'Modifier la ligne';
+  document.getElementById('ptEditId').value = t.id;
+  populatePeaCompteSelect();
+  document.getElementById('ptCompteId').value = t.compteId||'';
+  document.getElementById('ptNom').value = t.nom;
+  document.getElementById('ptTicker').value = t.ticker||'';
+  document.getElementById('ptDate').value = t.date;
+  document.getElementById('ptQte').value = t.quantite;
+  document.getElementById('ptPrix').value = t.prix;
+  document.getElementById('ptDevise').value = t.devise||'EUR';
+  document.getElementById('ptFrais').value = t.frais||0;
+  document.getElementById('ptFxFrais').value = t.fxFraisPct!==undefined?t.fxFraisPct:0.25;
+  document.getElementById('ptTer').value = t.ter||0;
+  document.getElementById('ptTtf').checked = !!t.ttf;
+  document.getElementById('ptCours').value = (t.cours===null||t.cours===undefined)?'':t.cours;
+  document.getElementById('ptCoursMeta').textContent = t.coursDate ? `Dernière MàJ cours : ${t.coursDate}${t.coursSource?' · '+t.coursSource:''}` : '';
+  toggleFxFraisField();
+  openModal('modalPeaTitre');
+}
+function savePeaTitre() {
+  const editId    = document.getElementById('ptEditId').value;
+  const compteId  = document.getElementById('ptCompteId').value;
+  const nom       = document.getElementById('ptNom').value.trim();
+  const ticker    = document.getElementById('ptTicker').value.trim().toUpperCase();
+  const date      = document.getElementById('ptDate').value || today();
+  const quantite  = parseFloat(document.getElementById('ptQte').value)||0;
+  const prix      = parseFloat(document.getElementById('ptPrix').value)||0;
+  const devise    = document.getElementById('ptDevise').value;
+  const frais     = parseFloat(document.getElementById('ptFrais').value)||0;
+  const fxFraisPct= parseFloat(document.getElementById('ptFxFrais').value)||0;
+  const ter       = parseFloat(document.getElementById('ptTer').value)||0;
+  const ttf       = document.getElementById('ptTtf').checked;
+  const coursRaw  = document.getElementById('ptCours').value;
+  const cours     = coursRaw!==''?parseFloat(coursRaw):null;
+  if (!compteId){notify('Sélectionnez un compte',true);return;}
+  if (!nom||quantite<=0||prix<=0){notify('Nom, quantité et prix d\'achat requis',true);return;}
+  const existing = editId ? state.peaTitres.find(x=>x.id===editId) : null;
+  const titre = {id:editId||uid(), compteId, nom, ticker, date, quantite, prix, devise, frais, fxFraisPct, ter, ttf, cours,
+    coursDate: existing?existing.coursDate:null, coursSource: existing?existing.coursSource:null};
+  if (editId) {
+    const idx = state.peaTitres.findIndex(x=>x.id===editId);
+    if (idx>=0) state.peaTitres[idx] = titre;
+  } else {
+    state.peaTitres.push(titre);
+  }
+  closeModal('modalPeaTitre');
+  notify(editId?'Ligne modifiée':'Ligne ajoutée');
+  renderPeaPortefeuille();
+}
+function deletePeaTitre(id) {
+  if (!confirm('Supprimer cette ligne ?')) return;
+  state.peaTitres = state.peaTitres.filter(t=>t.id!==id);
+  renderPeaPortefeuille();
+}
+
+// ── Calcul frais & PRU net/brut ──
+function peaTitreRow(t) {
+  const compte = state.peaComptes.find(c=>c.id===t.compteId);
+  const montantBrut = t.quantite*t.prix;
+  const fxFrais = (t.devise && t.devise!=='EUR') ? montantBrut*((t.fxFraisPct||0)/100) : 0;
+  const ttfFrais = t.ttf ? montantBrut*TTF_RATE : 0;
+  const fraisCourtage = t.frais||0;
+  const totalFrais = fraisCourtage + fxFrais + ttfFrais;
+  const investi = montantBrut + totalFrais;
+  const pruBrut = t.quantite>0 ? t.prix : 0;
+  const pruNet  = t.quantite>0 ? investi/t.quantite : 0;
+  const coursActuel = (t.cours!==null && t.cours!==undefined) ? t.cours : t.prix;
+  const valeurBrute = t.quantite*coursActuel;
+  const terAnnuel = valeurBrute*((t.ter||0)/100);
+  const pv = valeurBrute-investi;
+  const pvPct = investi>0?(pv/investi*100):0;
+  const fiscal = getCompteFiscalInfo(compte);
+  const gainImposable = Math.max(0,pv);
+  const impotEstime = gainImposable*fiscal.rate;
+  const pvNetteFiscale = pv - (pv>0?impotEstime:0);
+  return {t,compte,montantBrut,fxFrais,ttfFrais,fraisCourtage,totalFrais,investi,pruBrut,pruNet,coursActuel,
+    valeur:valeurBrute,terAnnuel,pv,pvPct,fiscal,impotEstime,pvNetteFiscale};
+}
+
+function renderPeaComptesList() {
+  const container = document.getElementById('peaComptesList');
+  if (!state.peaComptes.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun compte. Cliquez sur "+ Ajouter un compte" pour commencer.</div>';
+    return;
+  }
+  container.innerHTML = state.peaComptes.map(c=>{
+    const titres = state.peaTitres.filter(t=>t.compteId===c.id);
+    const rows = titres.map(peaTitreRow);
+    const investi = rows.reduce((s,r)=>s+r.investi,0);
+    const valeur  = rows.reduce((s,r)=>s+r.valeur,0);
+    const pv      = valeur-investi;
+    const pvPct   = investi>0?(pv/investi*100):0;
+    const plafondPct = c.plafond>0?Math.min(100,investi/c.plafond*100):0;
+    const fiscalInfo = getCompteFiscalInfo(c);
+    const terAnnuelTotal = rows.reduce((s,r)=>s+r.terAnnuel,0);
+    return `<div class="immo-card">
+      <div class="immo-card-header">
+        <div>
+          <div class="immo-prop-title">💼 ${c.nom} <span class="badge ${c.type==='CTO'?'badge-blue':'badge-gold'}" style="margin-left:6px">${compteTypeLabel(c.type)}</span></div>
+          ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">🏦 ${c.banque} · Courtage ${fmtPct(c.courtagePct||0)} · Garde ${fmtPct(c.gardePct||0)}/an</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn" style="padding:6px 12px;font-size:10px" onclick="openAddPeaTitre('${c.id}')">+ Ligne</button>
+          <button class="icon-btn" onclick="openEditPeaCompte('${c.id}')">✎</button>
+          <button class="icon-btn del" onclick="openEditPeaCompte('${c.id}');deletePeaCompte()">✕</button>
+        </div>
+      </div>
+      <div class="immo-metrics" style="grid-template-columns:repeat(5,1fr)">
+        <div class="immo-metric"><div class="immo-metric-label">Investi</div><div class="immo-metric-val" style="color:var(--gold)">${fmt(investi)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Valeur</div><div class="immo-metric-val" style="color:var(--blue)">${fmt(valeur)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">+/−</div><div class="immo-metric-val" style="color:${pv>=0?'var(--green)':'var(--red)'}">${pv>=0?'+':''}${fmt(pv)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Perf.</div><div class="immo-metric-val" style="color:${pvPct>=0?'var(--green)':'var(--red)'}">${pvPct>=0?'+':''}${fmtPct(pvPct,1)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">TER annuel est.</div><div class="immo-metric-val" style="color:var(--red)">−${fmt(terAnnuelTotal)}</div></div>
+      </div>
+      ${c.plafond?`<div style="margin-bottom:10px">
+        <div class="fire-label"><span>Plafond de versement</span><span>${fmt(investi)} / ${fmt(c.plafond)}</span></div>
+        <div class="fire-bar-wrap"><div class="fire-bar" style="width:${plafondPct}%"></div></div>
+      </div>`:''}
+      <div class="info-note" style="margin-bottom:14px">🏛 Fiscalité applicable en cas de retrait : <strong>${fiscalInfo.label}</strong></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Titre</th><th>Date achat</th><th>Qté</th><th>PRU brut</th><th>PRU net</th><th>Frais totaux</th><th>Investi</th><th>Cours actuel</th><th>Valeur</th><th>+/−</th><th>%</th><th>Impôt est.</th><th></th></tr></thead>
+          <tbody>
+          ${rows.length ? [...rows].sort((a,b)=>b.t.date.localeCompare(a.t.date)).map(r=>`
+            <tr>
+              <td class="highlight">${r.t.nom}${r.t.ticker?`<div style="font-family:var(--font-mono);font-size:9px;color:var(--text3)">${r.t.ticker}${r.t.devise!=='EUR'?' · '+r.t.devise:''}</div>`:''}</td>
+              <td>${r.t.date}</td>
+              <td style="font-family:var(--font-mono)">${r.t.quantite}</td>
+              <td style="font-family:var(--font-mono)">${fmt(r.pruBrut)}</td>
+              <td style="font-family:var(--font-mono);color:var(--gold)" title="Courtage ${fmt(r.fraisCourtage)} + Change ${fmt(r.fxFrais)} + TTF ${fmt(r.ttfFrais)}">${fmt(r.pruNet)}</td>
+              <td style="font-family:var(--font-mono);color:var(--red)">${fmt(r.totalFrais)}</td>
+              <td class="gold">${fmt(r.investi)}</td>
+              <td style="font-family:var(--font-mono)">${fmt(r.coursActuel)}</td>
+              <td class="blue">${fmt(r.valeur)}</td>
+              <td class="${r.pv>=0?'green':'red'}">${r.pv>=0?'+':''}${fmt(r.pv)}</td>
+              <td class="${r.pvPct>=0?'green':'red'}">${r.pvPct>=0?'+':''}${fmtPct(r.pvPct,1)}</td>
+              <td style="font-family:var(--font-mono);color:var(--red)">${r.pv>0?'−'+fmt(r.impotEstime):'—'}</td>
+              <td><div class="row-actions">
+                <button class="icon-btn" onclick="fetchPeaTitreCours('${r.t.id}')" title="Actualiser le cours (API)">🔄</button>
+                <button class="icon-btn" onclick="openEditPeaTitre('${r.t.id}')" title="Modifier / mettre à jour le cours">✎</button>
+                <button class="icon-btn del" onclick="deletePeaTitre('${r.t.id}')">✕</button>
+              </div></td>
+            </tr>`).join('') : '<tr><td colspan="13" style="text-align:center;color:var(--text3);padding:16px">Aucune ligne dans ce compte</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPeaPortefeuille() {
+  const rows = (state.peaTitres||[]).map(peaTitreRow);
+  const totalInvesti = rows.reduce((s,r)=>s+r.investi,0);
+  const totalValeur  = rows.reduce((s,r)=>s+r.valeur,0);
+
+  document.getElementById('pkpi-investi').textContent = fmt(totalInvesti);
+  document.getElementById('pkpi-valeur').textContent  = fmt(totalValeur);
+  const pvTotal = totalValeur-totalInvesti;
+  const pvEl = document.getElementById('pkpi-pv');
+  pvEl.textContent = (pvTotal>=0?'+':'')+fmt(pvTotal);
+  pvEl.className = 'card-value '+(pvTotal>=0?'green':'red');
+  const perfEl = document.getElementById('pkpi-perf');
+  const perfPct = totalInvesti>0?(pvTotal/totalInvesti*100):0;
+  perfEl.textContent = (perfPct>=0?'+':'')+fmtPct(perfPct,1);
+  perfEl.className = 'card-value '+(perfPct>=0?'green':'red');
+
+  // Donut allocation par ligne (tous comptes confondus)
+  if (chartPeaTitres){chartPeaTitres.destroy();chartPeaTitres=null;}
+  const ctx = document.getElementById('chartPeaTitres');
+  const palette = ['#c9a84c','#4caf78','#4c8fc9','#9b59b6','#e8c97a','#c94c4c','#6ba3d6','#e74c3c','#16a085','#f39c12'];
+  if (ctx && rows.length) {
+    chartPeaTitres = new Chart(ctx.getContext('2d'),{
+      type:'doughnut',
+      data:{labels:rows.map(r=>r.t.nom),datasets:[{data:rows.map(r=>r.valeur),backgroundColor:rows.map((_,i)=>palette[i%palette.length]),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)}`}}},cutout:'62%'}
+    });
+  }
+  document.getElementById('peaTitresList').innerHTML = rows.length ? rows.map((r,i)=>`
+    <div class="alloc-row">
+      <div><span class="alloc-dot" style="background:${palette[i%palette.length]}"></span>${r.t.nom}</div>
+      <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(totalValeur>0?r.valeur/totalValeur*100:0,0)} <span style="color:var(--text3);margin-left:8px">${fmt(r.valeur)}</span></div>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:13px">Aucune ligne</div>';
+
+  document.getElementById('peaTitresBreakdown').innerHTML = rows.length ? rows.map(r=>`
+    <div class="alloc-row">
+      <div>
+        <div style="color:var(--text)">${r.t.nom}</div>
+        <div style="color:var(--text3);font-family:var(--font-mono);font-size:10px">${r.t.quantite} × ${fmt(r.coursActuel)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--font-mono);color:${r.pv>=0?'var(--green)':'var(--red)'}">${r.pv>=0?'+':''}${fmt(r.pv)}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:${r.pvPct>=0?'var(--green)':'var(--red)'}">${r.pvPct>=0?'+':''}${fmtPct(r.pvPct,1)}</div>
+      </div>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:13px">Aucune ligne pour le moment</div>';
+
+  renderPeaComptesList();
+}
+
+// ═══════════════════════════════════════
+//  COURS EN TEMPS RÉEL — API CLIENT-SIDE (Alpha Vantage) + CACHE + FALLBACK MANUEL
+// ═══════════════════════════════════════
+function openApiSettingsModal() {
+  document.getElementById('settApiKey').value = state.settings?.apiKeyAlpha || '';
+  document.getElementById('settCacheTtl').value = state.settings?.cacheTtlMin || 15;
+  openModal('modalApiSettings');
+}
+function saveApiSettings() {
+  if (!state.settings) state.settings = {};
+  state.settings.apiKeyAlpha = document.getElementById('settApiKey').value.trim();
+  state.settings.cacheTtlMin = parseInt(document.getElementById('settCacheTtl').value)||15;
+  closeModal('modalApiSettings');
+  notify('Paramètres API enregistrés');
+}
+
+// Cache local (localStorage) pour limiter les appels API et respecter le rate-limiting du quota gratuit
+function getCachedPrice(ticker) {
+  try {
+    const raw = localStorage.getItem('priceCache_'+ticker);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const ttlMs = (state.settings?.cacheTtlMin||15)*60*1000;
+    if (Date.now()-data.ts > ttlMs) return null;
+    return data;
+  } catch { return null; }
+}
+function setCachedPrice(ticker, price) {
+  try { localStorage.setItem('priceCache_'+ticker, JSON.stringify({price, ts:Date.now()})); } catch {}
+}
+
+// Interroge Alpha Vantage GLOBAL_QUOTE. Retourne {price} ou lève une erreur.
+// Si pas de clé API configurée ou en cas d'échec, on invite l'utilisateur à saisir le cours manuellement (fallback déjà présent sur chaque ligne).
+async function fetchStockPrice(ticker) {
+  if (!ticker) throw new Error('Ticker manquant');
+  const cached = getCachedPrice(ticker);
+  if (cached) return {price: cached.price, cached: true};
+  const apiKey = state.settings?.apiKeyAlpha;
+  if (!apiKey) throw new Error('no_api_key');
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('http_error');
+  const data = await res.json();
+  const priceStr = data?.['Global Quote']?.['05. price'];
+  if (!priceStr) throw new Error(data?.Note ? 'quota' : 'not_found');
+  const price = parseFloat(priceStr);
+  if (isNaN(price)) throw new Error('parse_error');
+  setCachedPrice(ticker, price);
+  return {price, cached:false};
+}
+
+async function fetchPeaTitreCours(id) {
+  const t = state.peaTitres.find(x=>x.id===id);
+  if (!t) return;
+  if (!t.ticker) { notify('Aucun ticker renseigné pour cette ligne — modifie-la pour en ajouter un, ou saisis le cours manuellement',true); return; }
+  try {
+    const {price, cached} = await fetchStockPrice(t.ticker);
+    t.cours = price;
+    t.coursDate = new Date().toLocaleString('fr-FR');
+    t.coursSource = cached ? 'Alpha Vantage (cache)' : 'Alpha Vantage';
+    notify(`Cours ${t.nom} mis à jour : ${fmt(price)}`);
+    renderPeaPortefeuille();
+  } catch (e) {
+    if (e.message==='no_api_key') notify('Aucune clé API configurée (⚙ Cours API) — mets à jour le cours manuellement',true);
+    else if (e.message==='quota') notify('Quota API atteint — mets à jour le cours manuellement en attendant',true);
+    else notify('Échec de récupération du cours — mets-le à jour manuellement',true);
+  }
+}
+async function fetchPeaTitreCoursForm() {
+  const ticker = document.getElementById('ptTicker').value.trim().toUpperCase();
+  if (!ticker) { notify('Renseigne un ticker pour utiliser la récupération automatique',true); return; }
+  try {
+    const {price, cached} = await fetchStockPrice(ticker);
+    document.getElementById('ptCours').value = price;
+    document.getElementById('ptCoursMeta').textContent = `Cours récupéré : ${fmt(price)} (${cached?'cache':'Alpha Vantage'}) à l'instant`;
+    notify('Cours récupéré, pense à Enregistrer');
+  } catch (e) {
+    if (e.message==='no_api_key') notify('Aucune clé API configurée — clique sur ⚙ Cours API, ou saisis le cours manuellement ci-dessous',true);
+    else if (e.message==='quota') notify('Quota API atteint — saisis le cours manuellement',true);
+    else notify('Ticker introuvable ou échec API — saisis le cours manuellement',true);
+  }
+}
+// Actualise tous les cours séquentiellement en respectant le rate-limit gratuit (~5 req/min => 12s d'espacement)
+async function refreshAllPeaCours() {
+  const titresAvecTicker = state.peaTitres.filter(t=>t.ticker);
+  if (!titresAvecTicker.length) { notify('Aucune ligne avec ticker renseigné',true); return; }
+  if (!state.settings?.apiKeyAlpha) { notify('Configure une clé API (⚙ Cours API) pour actualiser automatiquement',true); return; }
+  notify(`Actualisation de ${titresAvecTicker.length} ligne(s)…`);
+  for (let i=0; i<titresAvecTicker.length; i++) {
+    const t = titresAvecTicker[i];
+    try {
+      const {price, cached} = await fetchStockPrice(t.ticker);
+      t.cours = price;
+      t.coursDate = new Date().toLocaleString('fr-FR');
+      t.coursSource = cached ? 'Alpha Vantage (cache)' : 'Alpha Vantage';
+    } catch { /* on continue avec les autres lignes, fallback manuel reste possible */ }
+    if (i < titresAvecTicker.length-1) await new Promise(r=>setTimeout(r,12000));
+  }
+  renderPeaPortefeuille();
+  notify('Actualisation terminée');
+}
+
+// ═══════════════════════════════════════
+//  SALAIRE RÉCURRENT
+// ═══════════════════════════════════════
+function openLocataireModal() { populateBienSelects(); document.getElementById('locEntree').value=today(); openModal('modalLocataire'); }
+function openChargeModal() { populateBienSelects(); document.getElementById('chargeDate').value=today(); updateChargeLabel(); openModal('modalCharge'); }
+function openImmoActifModal() { document.getElementById('immoActifTitle').textContent='Nouveau Bien Immobilier'; document.getElementById('immoEditActifId').value=''; ['immoLabel','immoAdresse'].forEach(id=>document.getElementById(id).value=''); ['immoValeur','immoAcquisition','immoLoyer','immoCreditCRD','immoCreditMens'].forEach(id=>document.getElementById(id).value=''); document.getElementById('immoApprec').value='2'; document.getElementById('immoFiscal').value='nu'; openModal('modalImmoActif'); }
+function openSalaireModal() {
+  const s = state.salaire;
+  populateCompteSelects();
+  document.getElementById('salLabel').value = s ? s.label : 'Salaire net';
+  document.getElementById('salMontant').value = s ? s.montant : '';
+  document.getElementById('salJour').value = s ? s.jour : 1;
+  document.getElementById('salCateg').value = s ? s.categ : 'Salaire';
+  document.getElementById('salCompte').value = s ? (s.compteId||'') : '';
+  document.getElementById('salFromMonth').value = s ? s.fromMonth : new Date().getMonth()+1;
+  document.getElementById('salFromYear').value = s ? s.fromYear : new Date().getFullYear();
+  document.getElementById('salToMonth').value = s ? (s.toMonth||'') : '';
+  document.getElementById('salToYear').value = s ? (s.toYear||'') : '';
+  document.getElementById('salDeleteBtn').style.display = s ? 'inline-block' : 'none';
+  openModal('modalSalaire');
+}
+
+function saveSalaire() {
+  const montant = parseFloat(document.getElementById('salMontant').value);
+  const jour = parseInt(document.getElementById('salJour').value)||1;
+  const fromM = parseInt(document.getElementById('salFromMonth').value);
+  const fromY = parseInt(document.getElementById('salFromYear').value);
+  if (!montant||montant<=0||!fromY){notify('Montant et date de départ requis',true);return;}
+  const toM = parseInt(document.getElementById('salToMonth').value)||null;
+  const toY = parseInt(document.getElementById('salToYear').value)||null;
+  state.salaire = {
+    label: document.getElementById('salLabel').value.trim()||'Salaire net',
+    montant, jour,
+    categ: document.getElementById('salCateg').value,
+    compteId: document.getElementById('salCompte').value||null,
+    fromMonth: fromM, fromYear: fromY,
+    toMonth: toM, toYear: toY
+  };
+  applySalaire();
+  closeModal('modalSalaire');
+  renderAll();
+  notify('Salaire configuré et appliqué');
+}
+function deleteSalaire() {
+  if (!confirm('Supprimer le salaire récurrent ?')) return;
+  state.salaire = null;
+  closeModal('modalSalaire');
+  renderSalaireBadge();
+  notify('Salaire supprimé');
+}
+function applySalaire() {
+  if (!state.salaire) return;
+  const s = state.salaire;
+  const padZ = n => String(n).padStart(2,'0');
+  // Remove old auto-generated salary entries
+  state.budget = state.budget.filter(b=>!b._salaire);
+  // Generate for each month in range
+  const start = new Date(s.fromYear, s.fromMonth-1, 1);
+  const endDate = s.toYear && s.toMonth ? new Date(s.toYear, s.toMonth-1, 1) : new Date(new Date().getFullYear(), 11, 1);
+  let cur = new Date(start);
+  while (cur <= endDate) {
+    const y = cur.getFullYear();
+    const m = cur.getMonth()+1;
+    const d = Math.min(s.jour, new Date(y, m, 0).getDate());
+    const dateStr = `${y}-${padZ(m)}-${padZ(d)}`;
+    state.budget.push({
+      id: uid(), label: s.label, categ: s.categ, compteId: s.compteId||null,
+      montant: s.montant, type: 'revenu', date: dateStr, _salaire: true
+    });
+    cur.setMonth(cur.getMonth()+1);
+  }
+}
+function renderSalaireBadge() {
+  const wrap = document.getElementById('salaryBadgeWrap');
+  if (!wrap) return;
+  if (state.salaire) {
+    wrap.innerHTML = `<div class="salary-badge" onclick="openSalaireModal()" style="cursor:pointer" title="Cliquer pour modifier">
+      💼 ${state.salaire.label} · ${fmt(state.salaire.montant)}/mois · J${state.salaire.jour}
+    </div>`;
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+// ═══════════════════════════════════════
+//  IMMOBILIER — BIENS
+// ═══════════════════════════════════════
+function saveImmoBien() {
+  const editId = document.getElementById('immoEditActifId').value;
+  const label = document.getElementById('immoLabel').value.trim();
+  const valeur = parseFloat(document.getElementById('immoValeur').value)||0;
+  const acquisition = parseFloat(document.getElementById('immoAcquisition').value)||valeur;
+  const loyer = parseFloat(document.getElementById('immoLoyer').value)||0;
+  const creditCRD = parseFloat(document.getElementById('immoCreditCRD').value)||0;
+  const creditMens = parseFloat(document.getElementById('immoCreditMens').value)||0;
+  const apprec = parseFloat(document.getElementById('immoApprec').value)||2;
+  const fiscal = document.getElementById('immoFiscal').value;
+  const adresse = document.getElementById('immoAdresse').value.trim();
+  if (!label||valeur<=0){notify('Libellé et valeur requis',true);return;}
+  const bien = {id:editId||uid(), label, valeur, acquisition, loyer, creditCRD, creditMens, apprec, fiscal, adresse};
+  if (editId) {
+    const idx = state.immoBiens.findIndex(b=>b.id===editId);
+    if (idx>=0) state.immoBiens[idx] = bien;
+  } else {
+    state.immoBiens.push(bien);
+    // Also create in actifs for portfolio visibility
+    state.actifs.push({id:bien.id+'_a', label, category:'immobilier', valeur, mensuel:0, loyer, taux:apprec, fiscal:'ps', _immoRef:bien.id});
+  }
+  closeModal('modalImmoActif');
+  document.getElementById('immoEditActifId').value='';
+  notify(editId?'Bien modifié':'Bien enregistré');
+  renderAll();
+}
+function openEditImmoBien(id) {
+  const b = state.immoBiens.find(x=>x.id===id);
+  if (!b) return;
+  document.getElementById('immoActifTitle').textContent = 'Modifier le bien';
+  document.getElementById('immoEditActifId').value = id;
+  document.getElementById('immoLabel').value = b.label;
+  document.getElementById('immoValeur').value = b.valeur;
+  document.getElementById('immoAcquisition').value = b.acquisition||b.valeur;
+  document.getElementById('immoLoyer').value = b.loyer||0;
+  document.getElementById('immoCreditCRD').value = b.creditCRD||0;
+  document.getElementById('immoCreditMens').value = b.creditMens||0;
+  document.getElementById('immoApprec').value = b.apprec||2;
+  document.getElementById('immoFiscal').value = b.fiscal||'nu';
+  document.getElementById('immoAdresse').value = b.adresse||'';
+  openModal('modalImmoActif');
+}
+function deleteImmoBien(id) {
+  if (!confirm('Supprimer ce bien et ses données associées ?')) return;
+  state.immoBiens = state.immoBiens.filter(b=>b.id!==id);
+  state.locataires = state.locataires.filter(l=>l.bienId!==id);
+  state.charges = state.charges.filter(c=>c.bienId!==id);
+  state.actifs = state.actifs.filter(a=>a._immoRef!==id);
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  IMMOBILIER — LOCATAIRES
+// ═══════════════════════════════════════
+function populateBienSelects() {
+  const options = state.immoBiens.map(b=>`<option value="${b.id}">${b.label}</option>`).join('')
+    || '<option value="">— Aucun bien —</option>';
+  ['locBienId','chargeBienId'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = options;
+  });
+}
+function saveLocataire() {
+  const bienId = document.getElementById('locBienId').value;
+  const nom = document.getElementById('locNom').value.trim();
+  const entree = document.getElementById('locEntree').value;
+  const sortie = document.getElementById('locSortie').value;
+  const loyer = parseFloat(document.getElementById('locLoyer').value)||0;
+  const caution = parseFloat(document.getElementById('locCaution').value)||0;
+  const notes = document.getElementById('locNotes').value.trim();
+  if (!nom||!entree||!bienId){notify('Bien, nom et date d\'entrée requis',true);return;}
+  state.locataires.push({id:uid(),bienId,nom,entree,sortie,loyer,caution,notes});
+  // Update bien loyer if actif
+  if (!sortie) {
+    const b = state.immoBiens.find(x=>x.id===bienId);
+    if (b) b.loyer = loyer;
+    const a = state.actifs.find(x=>x._immoRef===bienId);
+    if (a) a.loyer = loyer;
+  }
+  closeModal('modalLocataire');
+  ['locNom','locEntree','locSortie','locLoyer','locCaution','locNotes'].forEach(id=>document.getElementById(id).value='');
+  notify('Locataire enregistré');
+  renderAll();
+}
+function deleteLocataire(id) {
+  if (!confirm('Supprimer ce locataire ?')) return;
+  state.locataires = state.locataires.filter(l=>l.id!==id);
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+//  IMMOBILIER — CHARGES
+// ═══════════════════════════════════════
+const CHARGE_ICONS = {taxe_fonciere:'🏛',assurance_pno:'🛡',assurance_loyers:'📋',eau:'💧',electricite:'⚡',gaz:'🔥',internet:'📡',copropriete:'🏢',gestion:'🔑',entretien:'🔧',travaux:'🏗',comptable:'📊',autre:'📦'};
+function updateChargeLabel() {
+  const t = document.getElementById('chargeType').value;
+  const labels = {taxe_fonciere:'Taxe foncière 2024',assurance_pno:'Assurance PNO',assurance_loyers:'GLI / Assurance loyers impayés',eau:'Eau & assainissement',electricite:'Electricité parties communes',gaz:'Gaz',internet:'Box Internet',copropriete:'Charges copropriété',gestion:'Commission agence',entretien:'Entretien chaudière',travaux:'Travaux rénovation',comptable:'Frais expert-comptable',autre:'Autre charge'};
+  document.getElementById('chargeLabel').value = labels[t]||'';
+}
+function saveCharge() {
+  const bienId = document.getElementById('chargeBienId').value;
+  const type = document.getElementById('chargeType').value;
+  const label = document.getElementById('chargeLabel').value.trim()||type;
+  const montant = parseFloat(document.getElementById('chargeMontant').value)||0;
+  const freq = document.getElementById('chargeFreq').value;
+  const date = document.getElementById('chargeDate').value;
+  if (!bienId||montant<=0){notify('Bien et montant requis',true);return;}
+  state.charges.push({id:uid(),bienId,type,label,montant,freq,date});
+  closeModal('modalCharge');
+  ['chargeLabel','chargeMontant','chargeDate'].forEach(id=>document.getElementById(id).value='');
+  notify('Charge enregistrée');
+  renderAll();
+}
+function deleteCharge(id) {
+  state.charges = state.charges.filter(c=>c.id!==id);
+  renderAll();
+}
+function chargesMensuelles(bienId) {
+  return state.charges.filter(c=>c.bienId===bienId).reduce((s,c)=>{
+    const m = {mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
+    return s + c.montant*(m[c.freq]||0);
+  },0);
+}
+function chargesAnnuelles(bienId) { return chargesMensuelles(bienId)*12; }
+
+// ═══════════════════════════════════════
+//  IMMOBILIER — RENDER
+// ═══════════════════════════════════════
+function showImmoTab(id, el) {
+  document.querySelectorAll('.sub-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+function getFiscalLabel(f) {
+  const m={nu:'Nu (IR)',lmnp:'LMNP Micro-BIC',lmnp_reel:'LMNP Réel',sci:'SCI IS 15%'};
+  return m[f]||f;
+}
+function getTaxRate(f) {
+  // Approximate net tax rate on rental income
+  const m={nu:0.30,lmnp:0.15,lmnp_reel:0.05,sci:0.15};
+  return m[f]||0.30;
+}
+
+function renderImmobilier() {
+  populateBienSelects();
+  renderImmoKPIs();
+  renderImmoBiensList();
+  renderLocatairesTable();
+  renderChargesTable();
+  renderRendement();
+}
+
+function renderImmoKPIs() {
+  const totalLoyers = state.immoBiens.reduce((s,b)=>s+(b.loyer||0),0);
+  const totalChargesMens = state.immoBiens.reduce((s,b)=>s+chargesMensuelles(b.id),0);
+  const netAvantImpots = totalLoyers - totalChargesMens;
+  const totalValeur = state.immoBiens.reduce((s,b)=>s+(b.valeur||0),0);
+  // Net after taxes: apply tax rate per bien
+  const netApresImpots = state.immoBiens.reduce((s,b)=>{
+    const taxRate = getTaxRate(b.fiscal||'nu');
+    const loyer = b.loyer||0;
+    const charges = chargesMensuelles(b.id);
+    return s + loyer*(1-taxRate) - charges - (b.creditMens||0);
+  }, 0);
+  document.getElementById('ikpi-loyers').textContent = fmt(totalLoyers)+'/mois';
+  document.getElementById('ikpi-charges').textContent = fmt(totalChargesMens)+'/mois';
+  const netEl = document.getElementById('ikpi-net');
+  netEl.textContent = fmt(netAvantImpots)+'/mois';
+  netEl.className = 'card-value '+(netAvantImpots>=0?'green':'red');
+  const netApresEl = document.getElementById('ikpi-net-apres');
+  if (netApresEl) {
+    netApresEl.textContent = fmt(netApresImpots)+'/mois';
+    netApresEl.className = 'card-value '+(netApresImpots>=0?'gold':'red');
+  }
+  document.getElementById('ikpi-valeur').textContent = fmt(totalValeur);
+}
+
+function renderImmoBiensList() {
+  const container = document.getElementById('immoBiensList');
+  if (!state.immoBiens.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun bien immobilier. Cliquez sur "+ Bien immobilier" pour commencer.</div>';
+    return;
+  }
+  container.innerHTML = state.immoBiens.map(b=>{
+    const locActifs = state.locataires.filter(l=>l.bienId===b.id&&!l.sortie);
+    const locHisto = state.locataires.filter(l=>l.bienId===b.id&&l.sortie);
+    const chargesM = chargesMensuelles(b.id);
+    const netMens = (b.loyer||0) - chargesM - (b.creditMens||0);
+    const taxRateBien = getTaxRate(b.fiscal||'nu');
+    const rdmtBrut = b.valeur>0?((b.loyer||0)*12/b.valeur*100):0;
+    const rdmtNet = b.valeur>0?(netMens*12/b.valeur*100):0;
+    const cashflow = netMens;
+    const equity = (b.valeur||0)-(b.creditCRD||0);
+    const cfColor = cashflow>=0?'var(--green)':'var(--red)';
+    const netApresImpotsBien = (b.loyer||0)*(1-taxRateBien) - chargesM - (b.creditMens||0);
+    return `<div class="immo-card">
+      <div class="immo-card-header">
+        <div>
+          <div class="immo-prop-title">🏠 ${b.label}</div>
+          ${b.adresse?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">📍 ${b.adresse}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <span class="badge badge-gray">${getFiscalLabel(b.fiscal)}</span>
+          <span class="badge ${locActifs.length?'badge-green':'badge-red'}">${locActifs.length?'Loué':'Vacant'}</span>
+          <button class="icon-btn" onclick="openEditImmoBien('${b.id}')">✎</button>
+          <button class="icon-btn del" onclick="deleteImmoBien('${b.id}')">✕</button>
+        </div>
+      </div>
+      <div class="immo-metrics">
+        <div class="immo-metric"><div class="immo-metric-label">Loyer/mois</div><div class="immo-metric-val" style="color:var(--gold)">${fmt(b.loyer)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Charges/mois</div><div class="immo-metric-val" style="color:var(--red)">−${fmt(chargesM)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Crédit/mois</div><div class="immo-metric-val" style="color:var(--red)">−${fmt(b.creditMens||0)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Net avant impôts</div><div class="immo-metric-val" style="color:${cashflow>=0?'var(--green)':'var(--red)'}">${cashflow>=0?'+':''}${fmt(cashflow)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Net après impôts</div><div class="immo-metric-val" style="color:${netApresImpotsBien>=0?'var(--gold)':'var(--red)'}">${netApresImpotsBien>=0?'+':''}${fmt(netApresImpotsBien)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Équité</div><div class="immo-metric-val" style="color:var(--blue)">${fmt(equity)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Valeur</div><div class="immo-metric-val">${fmt(b.valeur)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Rdt Brut</div><div class="immo-metric-val ${rdmtBrut>5?'roi-positive':'roi-negative'}">${fmtPct(rdmtBrut)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Rdt Net</div><div class="immo-metric-val ${rdmtNet>3?'roi-positive':'roi-negative'}">${fmtPct(rdmtNet)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">CRD Crédit</div><div class="immo-metric-val" style="color:var(--red)">${fmt(b.creditCRD||0)}</div></div>
+        <div class="immo-metric"><div class="immo-metric-label">Prix d'achat</div><div class="immo-metric-val">${fmt(b.acquisition||b.valeur)}</div></div>
+      </div>
+      ${locActifs.length?`<div style="margin-bottom:8px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Locataire actuel</div>${locActifs.map(l=>`<div class="tenant-row"><div class="tenant-status actif"></div><span style="font-weight:500;color:var(--text)">${l.nom}</span><span style="color:var(--text3);font-size:11px">Depuis ${l.entree}</span><span class="badge badge-green" style="margin-left:auto">${fmt(l.loyer)}/m</span><span style="color:var(--text3);font-size:11px;margin-left:8px">Caution: ${fmt(l.caution)}</span></div>`).join('')}</div>`:''}
+      ${locHisto.length?`<div><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Anciens locataires (${locHisto.length})</div>${locHisto.slice(-2).map(l=>`<div class="tenant-row" style="opacity:.6"><div class="tenant-status parti"></div><span style="color:var(--text2)">${l.nom}</span><span style="color:var(--text3);font-size:11px">${l.entree} → ${l.sortie}</span></div>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderLocatairesTable() {
+  const tbody = document.getElementById('locatairesTbody');
+  const bienMap = {};
+  state.immoBiens.forEach(b=>bienMap[b.id]=b.label);
+  tbody.innerHTML = state.locataires.length
+    ? [...state.locataires].sort((a,b)=>b.entree.localeCompare(a.entree)).map(l=>`<tr>
+        <td class="highlight">${bienMap[l.bienId]||'—'}</td>
+        <td class="highlight">${l.nom}</td>
+        <td>${l.entree||'—'}</td>
+        <td ${!l.sortie?'class="green"':''}>${l.sortie||'En cours'}</td>
+        <td class="gold">${fmt(l.loyer)}/mois</td>
+        <td>${fmt(l.caution)}</td>
+        <td><span class="badge ${l.sortie?'badge-gray':'badge-green'}">${l.sortie?'Parti':'Actif'}</span></td>
+        <td><button class="icon-btn del" onclick="deleteLocataire('${l.id}')">✕</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">Aucun locataire enregistré</td></tr>';
+}
+
+function renderChargesTable() {
+  const tbody = document.getElementById('chargesTbody');
+  const bienMap = {};
+  state.immoBiens.forEach(b=>bienMap[b.id]=b.label);
+  const freqLabel = {mensuel:'Mensuelle',trimestriel:'Trimestrielle',annuel:'Annuelle',ponctuel:'Ponctuelle'};
+  const freqMens = {mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
+  tbody.innerHTML = state.charges.length
+    ? [...state.charges].sort((a,b)=>a.bienId.localeCompare(b.bienId)).map(c=>`<tr>
+        <td class="highlight">${bienMap[c.bienId]||'—'}</td>
+        <td>${CHARGE_ICONS[c.type]||'📦'} ${c.label}</td>
+        <td class="red">${fmt(c.montant)}</td>
+        <td><span class="badge badge-gray">${freqLabel[c.freq]||c.freq}</span></td>
+        <td class="gold">${fmt(c.montant*(freqMens[c.freq]||0))}/m</td>
+        <td style="color:var(--text3)">${c.date||'—'}</td>
+        <td><button class="icon-btn del" onclick="deleteCharge('${c.id}')">✕</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Aucune charge enregistrée</td></tr>';
+}
+
+function renderRendement() {
+  const container = document.getElementById('rendementList');
+  if (!state.immoBiens.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Ajoutez des biens pour voir les calculs de rendement.</div>';
+    return;
+  }
+  container.innerHTML = state.immoBiens.map(b=>{
+    const loyer = b.loyer||0;
+    const valeur = b.valeur||0;
+    const achat = b.acquisition||valeur;
+    const chargesM = chargesMensuelles(b.id);
+    const creditM = b.creditMens||0;
+    const creditCRD = b.creditCRD||0;
+    const taxRate = getTaxRate(b.fiscal||'nu');
+
+    // Calculs rendement
+    const rdmtBrut = valeur>0?(loyer*12/valeur*100):0;
+    const rdmtCharges = valeur>0?((loyer-chargesM)*12/valeur*100):0;
+    const loyerNetFisc = loyer*(1-taxRate);
+    const rdmtNet = valeur>0?(loyerNetFisc*12/valeur*100):0;
+
+    // Cash-flow
+    const cashflowBrut = loyer - chargesM;
+    const cashflowNet = loyer*(1-taxRate) - chargesM - creditM;
+
+    // ROI (Return on Investment sur apport)
+    const apport = achat - creditCRD;
+    const roiAnnuel = apport>0?(cashflowNet*12/apport*100):0;
+
+    // Plus-value potentielle 10 ans
+    const valeur10 = compound(valeur, b.apprec||2, 10);
+    const pvPotentielle = valeur10 - valeur;
+
+    // TRI simplifié (cashflow + PV)
+    const totalRetour10 = cashflowNet*12*10 + pvPotentielle;
+    const tri = apport>0?(totalRetour10/apport/10*100):0;
+
+    const cfColor = cashflowNet>=0?'var(--green)':'var(--red)';
+    const roiColor = roiAnnuel>=0?'var(--green)':'var(--red)';
+    return `<div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <span style="font-family:var(--font-display);font-size:18px;color:var(--gold)">📊 ${b.label}</span>
+        <span class="badge badge-gray">${getFiscalLabel(b.fiscal)}</span>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:16px">
+        <div style="background:var(--bg4);border-radius:6px;padding:14px">
+          <div class="card-title" style="margin-bottom:8px">Rendements</div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Brut</span><span class="immo-metric-val" style="color:var(--gold)">${fmtPct(rdmtBrut)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Net charges</span><span class="immo-metric-val" style="color:var(--text)">${fmtPct(rdmtCharges)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Net fiscal</span><span class="immo-metric-val ${rdmtNet>3?'roi-positive':'roi-negative'}">${fmtPct(rdmtNet)}</span></div>
+        </div>
+        <div style="background:var(--bg4);border-radius:6px;padding:14px">
+          <div class="card-title" style="margin-bottom:8px">Cash-flow mensuel</div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Brut (loyer−charges)</span><span style="font-family:var(--font-mono)">${fmt(cashflowBrut)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Net (−crédit −fisc.)</span><span style="font-family:var(--font-mono);color:${cfColor};font-weight:600">${cashflowNet>=0?'+':''}${fmt(cashflowNet)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Sur l'année</span><span style="font-family:var(--font-mono);color:${cfColor}">${cashflowNet>=0?'+':''}${fmt(cashflowNet*12)}</span></div>
+        </div>
+        <div style="background:var(--bg4);border-radius:6px;padding:14px">
+          <div class="card-title" style="margin-bottom:8px">ROI &amp; TRI</div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Apport initial</span><span style="font-family:var(--font-mono)">${fmt(apport)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">ROI annuel</span><span style="font-family:var(--font-mono);color:${roiColor};font-weight:600">${fmtPct(roiAnnuel)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">TRI ~10 ans</span><span style="font-family:var(--font-mono);color:${tri>5?'var(--green)':'var(--text)'}">${fmtPct(tri)}</span></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card-title" style="margin-bottom:8px">Projection valeur bien</div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Valeur actuelle</span><span style="font-family:var(--font-mono)">${fmt(valeur)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">+5 ans (${fmtPct(b.apprec||2)}/an)</span><span style="font-family:var(--font-mono);color:var(--gold)">${fmt(compound(valeur,b.apprec||2,5))}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">+10 ans</span><span style="font-family:var(--font-mono);color:var(--gold)">${fmt(valeur10)}</span></div>
+          <div class="alloc-row"><span style="color:var(--text3);font-size:12px">Plus-value potentielle 10a</span><span style="font-family:var(--font-mono);color:var(--green)">+${fmt(pvPotentielle)}</span></div>
+        </div>
+        <div>
+          <div class="card-title" style="margin-bottom:8px">Charges annuelles détail</div>
+          ${state.charges.filter(c=>c.bienId===b.id).length?
+            state.charges.filter(c=>c.bienId===b.id).map(c=>{
+              const freqMens={mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
+              const annuel = c.montant*(freqMens[c.freq]||0)*12;
+              return `<div class="alloc-row"><span style="color:var(--text3);font-size:12px">${CHARGE_ICONS[c.type]||'📦'} ${c.label}</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(annuel)}/an</span></div>`;
+            }).join('')+'<div class="alloc-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:8px"><span style="font-weight:500">Total charges annuelles</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(chargesM*12)}</span></div>'
+            :'<div style="color:var(--text3);font-size:12px;padding:8px">Aucune charge enregistrée pour ce bien.</div>'
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  RENDER ALL (extended)
+// ═══════════════════════════════════════
+function renderAllInner() {
+  renderBudgetTable();
+  renderComptes();
+  renderActifs();
+  renderPassifs();
+  renderSynthese();
+  renderImmobilier();
+  renderSalaireBadge();
+  renderPeaPortefeuille();
+}
+function renderAll() {
+  renderAllInner();
+  scheduleCloudSave(); // sauvegarde automatique (debounced) vers Supabase après chaque modification
+}
+
+// ═══════════════════════════════════════
+//  IMPORT / EXPORT
+// ═══════════════════════════════════════
+function exportData() {
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`heritage-os-${today()}.json`;
+  a.click();
+  notify('Données exportées');
+}
+function importData(event) {
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{const p=JSON.parse(e.target.result);if(p.budget!==undefined){
+      state={budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],comptes:[],peaComptes:[],peaTitres:[],settings:{apiKeyAlpha:'',cacheTtlMin:15},...p};
+      renderAll();notify('Données importées');
+    }else notify('Format invalide',true);}
+    catch{notify('Erreur lecture fichier',true);}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+
+// ═══════════════════════════════════════
+//  DIVERSIFICATION
+// ═══════════════════════════════════════
+let chartDivClasses=null, chartDivFiscal=null, chartDivRisque=null;
+
+function herfindahl(weights) {
+  // HHI : somme des parts² — 0=parfaitement diversifié, 1=concentré
+  const total = weights.reduce((a,v)=>a+v,0)||1;
+  return weights.reduce((s,w)=>s+Math.pow(w/total,2),0);
+}
+
+function divScore(hhi, n) {
+  // Score 0-100 : inverse HHI pondéré par nombre de positions
+  const base = 1-(hhi-1/Math.max(n,1));
+  return Math.max(0,Math.min(100,base*100));
+}
+
+function renderDiversification() {
+  const actifs = state.actifs;
+  const totalComptesDiv = getTotalComptes();
+  const totalPatrimoine = actifs.reduce((s,a)=>s+(a.valeur||0),0)+totalComptesDiv||1;
+
+  // ── 1. Répartition par classe ──
+  const classes = {
+    'Liquidités': actifs.filter(a=>a.category==='liquide').reduce((s,a)=>s+(a.valeur||0),0)+totalComptesDiv,
+    'Financier': actifs.filter(a=>a.category==='semiliquide').reduce((s,a)=>s+(a.valeur||0),0),
+    'Immobilier': actifs.filter(a=>a.category==='immobilier').reduce((s,a)=>s+(a.valeur||0),0),
+    'Physique': actifs.filter(a=>a.category==='physique').reduce((s,a)=>s+(a.valeur||0),0),
+  };
+  const classesVals = Object.values(classes).filter(v=>v>0);
+  const hhiClasses  = herfindahl(classesVals);
+  const scoreClasses= divScore(hhiClasses, classesVals.length);
+
+  // ── 2. Répartition fiscale ──
+  const fiscalMap = {'Exonéré':0, 'PEA (PS 17.2%)':0, 'Flat Tax 30%':0, 'Immobilier':0};
+  fiscalMap['Exonéré'] += totalComptesDiv;
+  actifs.forEach(a=>{
+    const v = a.valeur||0;
+    if (a.category==='physique') return;
+    if (a.category==='immobilier') { fiscalMap['Immobilier']+=v; return; }
+    if (a.fiscal==='exonere') fiscalMap['Exonéré']+=v;
+    else if (a.fiscal==='ps') fiscalMap['PEA (PS 17.2%)']+=v;
+    else fiscalMap['Flat Tax 30%']+=v;
+  });
+  const fiscalVals = Object.values(fiscalMap).filter(v=>v>0);
+  const hhiFiscal  = herfindahl(fiscalVals);
+  const scoreFiscal= divScore(hhiFiscal, fiscalVals.length);
+
+  // ── 3. Liquidité ──
+  const liquide = classes['Liquidités'];
+  const ratioLiq = liquide/totalPatrimoine*100;
+  const scoreLiq = ratioLiq>=5&&ratioLiq<=25 ? 100 : ratioLiq<5 ? ratioLiq/5*100 : Math.max(0,100-(ratioLiq-25)*2);
+
+  // ── 4. Score global ──
+  const scoreGlobal = Math.round(scoreClasses*0.4 + scoreFiscal*0.35 + scoreLiq*0.25);
+
+  // KPIs
+  const el = document.getElementById('divScore');
+  el.textContent = scoreGlobal+' / 100';
+  el.className = 'card-value '+(scoreGlobal>=75?'green':scoreGlobal>=50?'gold':'red');
+  document.getElementById('divClasses').textContent = fmtPct(scoreClasses,0);
+  document.getElementById('divEnveloppes').textContent = fmtPct(scoreFiscal,0);
+  const liqEl = document.getElementById('divLiquidite');
+  liqEl.textContent = fmtPct(ratioLiq,1);
+  liqEl.className = 'card-value '+(scoreLiq>=80?'green':scoreLiq>=50?'gold':'red');
+
+  // ── Jauge ──
+  const jauge = document.getElementById('divGauge');
+  const scoreColor = scoreGlobal>=75?'var(--green)':scoreGlobal>=50?'var(--gold)':'var(--red)';
+  const scoreLabel = scoreGlobal>=75?'Bonne diversification':scoreGlobal>=50?'Diversification modérée':'Concentration élevée';
+  jauge.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">Diversification globale</span>
+      <span style="font-family:var(--font-mono);font-size:13px;color:${scoreColor};font-weight:600">${scoreGlobal} pts — ${scoreLabel}</span>
+    </div>
+    <div style="background:var(--bg4);border-radius:6px;height:16px;overflow:hidden">
+      <div style="height:100%;width:${scoreGlobal}%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));border-radius:6px;transition:width .8s ease"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+      ${[
+        {l:'Classes d\'actifs',s:Math.round(scoreClasses),w:'40%'},
+        {l:'Enveloppes fiscales',s:Math.round(scoreFiscal),w:'35%'},
+        {l:'Liquidité',s:Math.round(scoreLiq),w:'25%'}
+      ].map(d=>`<div style="background:var(--bg4);border-radius:6px;padding:10px 12px">
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">${d.l} <span style="color:var(--text3)">(×${d.w})</span></div>
+        <div style="font-size:18px;font-family:var(--font-display);color:${d.s>=75?'var(--green)':d.s>=50?'var(--gold)':'var(--red)'}">${d.s}<span style="font-size:12px;color:var(--text3)">/100</span></div>
+        <div style="background:var(--bg);border-radius:3px;height:4px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${d.s}%;background:${d.s>=75?'var(--green)':d.s>=50?'var(--gold)':'var(--red)'}"></div></div>
+      </div>`).join('')}
+    </div>`;
+
+  // ── Recommandations ──
+  const recos = [];
+  if (scoreClasses<60) recos.push({icon:'⚠',color:'var(--red)',text:'Votre patrimoine est concentré sur peu de classes d\'actifs. Envisagez de diversifier (ex: ajouter des matières premières, obligations, SCPI).'});
+  if (classes['Financier']/(totalPatrimoine||1)<0.15) recos.push({icon:'💡',color:'var(--gold)',text:'La part financière (PEA, CTO, AV) est faible. Maximiser votre PEA (plafond 150 000 €) avant les autres enveloppes.'});
+  if (classes['Liquidités']/(totalPatrimoine||1)<0.05) recos.push({icon:'🔴',color:'var(--red)',text:'Réserve de liquidités insuffisante (< 5%). Maintenez 3-6 mois de dépenses sur Livret A.'});
+  if (classes['Liquidités']/(totalPatrimoine||1)>0.30) recos.push({icon:'💡',color:'var(--gold)',text:'Liquidités trop importantes (> 30%). L\'inflation érode votre capital. Investissez l\'excédent.'});
+  if (fiscalMap['Exonéré']==0) recos.push({icon:'💡',color:'var(--gold)',text:'Aucun actif exonéré. Ouvrez un Livret A (3% net) ou un LDDS pour votre épargne de précaution.'});
+  if (fiscalMap['PEA (PS 17.2%)']==0) recos.push({icon:'💡',color:'var(--gold)',text:'Pas de PEA détecté. C\'est l\'enveloppe la plus avantageuse pour les actions européennes (17,2% vs 30%).'});
+  if (classes['Immobilier']/(totalPatrimoine||1)>0.70) recos.push({icon:'⚠',color:'var(--red)',text:'Forte concentration immobilière (> 70%). Actif illiquide en cas de besoin urgent de liquidités.'});
+  if (recos.length===0) recos.push({icon:'✅',color:'var(--green)',text:'Excellente diversification ! Continuez à équilibrer vos versements selon votre profil de risque.'});
+
+  document.getElementById('divRecos').innerHTML = recos.map(r=>
+    `<div style="display:flex;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--bg4);border-radius:6px;border-left:3px solid ${r.color}">
+      <span style="font-size:16px;flex-shrink:0">${r.icon}</span>
+      <span style="color:var(--text2);font-size:12px">${r.text}</span>
+    </div>`).join('');
+
+  // ── Donut classes ──
+  const classColors = ['#4caf78','#c9a84c','#4c8fc9','#9b59b6'];
+  const classLabels = Object.keys(classes).filter((_,i)=>Object.values(classes)[i]>0);
+  const classData   = Object.values(classes).filter(v=>v>0);
+  if (chartDivClasses){chartDivClasses.destroy();chartDivClasses=null;}
+  if (classData.length) {
+    chartDivClasses = new Chart(document.getElementById('chartDivClasses').getContext('2d'),{
+      type:'doughnut',
+      data:{labels:classLabels,datasets:[{data:classData,backgroundColor:classColors.slice(0,classData.length),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)} (${fmtPct(ctx.raw/totalPatrimoine*100,1)})`}}},cutout:'65%'}
+    });
+  }
+  document.getElementById('divClassesList').innerHTML = classLabels.map((l,i)=>`
+    <div class="alloc-row">
+      <div><span class="alloc-dot" style="background:${classColors[i]}"></span>${l}</div>
+      <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(classData[i]/totalPatrimoine*100,1)} <span style="color:var(--text3);margin-left:6px">${fmt(classData[i])}</span></div>
+    </div>`).join('');
+
+  // ── Donut fiscal ──
+  const fiscalColors = ['#4caf78','#4c8fc9','#c9a84c','#9b59b6'];
+  const fiscalLabels = Object.keys(fiscalMap).filter(k=>fiscalMap[k]>0);
+  const fiscalData   = fiscalLabels.map(k=>fiscalMap[k]);
+  if (chartDivFiscal){chartDivFiscal.destroy();chartDivFiscal=null;}
+  if (fiscalData.length) {
+    chartDivFiscal = new Chart(document.getElementById('chartDivFiscal').getContext('2d'),{
+      type:'doughnut',
+      data:{labels:fiscalLabels,datasets:[{data:fiscalData,backgroundColor:fiscalColors.slice(0,fiscalData.length),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.raw)}`}}},cutout:'65%'}
+    });
+  }
+  document.getElementById('divFiscalList').innerHTML = fiscalLabels.map((l,i)=>`
+    <div class="alloc-row">
+      <div><span class="alloc-dot" style="background:${fiscalColors[i]}"></span>${l}</div>
+      <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(fiscalData[i]/totalPatrimoine*100,1)} <span style="color:var(--text3);margin-left:6px">${fmt(fiscalData[i])}</span></div>
+    </div>`).join('');
+
+  // ── Scatter rendement/risque ──
+  const RISK_RDMT = [
+    {label:'Livret A/LDDS',risk:0,rdmt:3,color:'#4caf78',r:8},
+    {label:'PEL',risk:0.5,rdmt:2.25,color:'#4caf78',r:6},
+    {label:'Fonds €',risk:1,rdmt:2.8,color:'#4caf78',r:7},
+    {label:'SCPI',risk:3,rdmt:4.5,color:'#c9a84c',r:8},
+    {label:'Immo direct',risk:4,rdmt:4.0,color:'#c9a84c',r:10},
+    {label:'ETF Oblig.',risk:3,rdmt:3.5,color:'#4c8fc9',r:7},
+    {label:'ETF World',risk:6,rdmt:8.0,color:'#e8c97a',r:10},
+    {label:'Actions FR',risk:7,rdmt:7.5,color:'#c9a84c',r:8},
+    {label:'ETF EM',risk:8,rdmt:9.0,color:'#9b59b6',r:8},
+    {label:'Crypto',risk:10,rdmt:15.0,color:'#c94c4c',r:7},
+  ];
+  if (chartDivRisque){chartDivRisque.destroy();chartDivRisque=null;}
+  chartDivRisque = new Chart(document.getElementById('chartDivRisque').getContext('2d'),{
+    type:'bubble',
+    data:{datasets:RISK_RDMT.map(d=>({label:d.label,data:[{x:d.risk,y:d.rdmt,r:d.r}],backgroundColor:d.color+'99',borderColor:d.color,borderWidth:1}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: risque ${ctx.raw.x}/10, rdmt ~${ctx.raw.y}%`}}},scales:{x:{title:{display:true,text:'Risque →',color:'var(--text3)',font:{family:'DM Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5a5854',font:{family:'DM Mono',size:10}},min:0,max:11},y:{title:{display:true,text:'Rendement % →',color:'var(--text3)',font:{family:'DM Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5a5854',font:{family:'DM Mono',size:10},callback:v=>v+'%'}}}}
+  });
+  document.getElementById('divRisqueNote').textContent = 'Tailles indicatives • Rendements bruts historiques annualisés estimés';
+}
+
+function loadDemo() {
+  const d = (y,m,j) => `${y}-${String(m).padStart(2,'0')}-${String(j).padStart(2,'0')}`;
+  const y = currentYear();
+  state.comptes = [
+    {id:'cpt_courant',label:'Compte Courant Principal',banque:'CIC',soldeInitial:2500},
+    {id:'cpt_joint',label:'Compte Joint',banque:'Boursorama',soldeInitial:800},
+  ];
+  const cptC = 'cpt_courant', cptJ = 'cpt_joint';
+  state.budget = [
+    // Janvier
+    {id:uid(),label:'Salaire net',categ:'Salaire',montant:3200,type:'revenu',date:d(y,1,1),compteId:cptC},
+    {id:uid(),label:'Revenus locatifs',categ:'Loyers perçus',montant:850,type:'revenu',date:d(y,1,2),compteId:cptJ},
+    {id:uid(),label:'Loyer appartement',categ:'Loyer / Logement',montant:1100,type:'depense',date:d(y,1,3),compteId:cptC},
+    {id:uid(),label:'Courses Carrefour',categ:'Alimentation',montant:280,type:'depense',date:d(y,1,8),compteId:cptJ},
+    {id:uid(),label:'Restaurant Septime',categ:'Restaurant',montant:95,type:'depense',date:d(y,1,12),compteId:cptC},
+    {id:uid(),label:'Metro / Navigo',categ:'Transport',montant:86,type:'depense',date:d(y,1,5),compteId:cptC},
+    {id:uid(),label:'Netflix + Spotify',categ:'Abonnement',montant:28,type:'depense',date:d(y,1,5),compteId:cptC},
+    {id:uid(),label:'Pressing pressing',categ:'Pressing',montant:45,type:'depense',date:d(y,1,15),compteId:cptJ},
+    {id:uid(),label:'Frais bancaires CIC',categ:'Banque',montant:9,type:'depense',date:d(y,1,20),compteId:cptC},
+    {id:uid(),label:'Bar Le Perchoir',categ:'Bar / Café',montant:62,type:'depense',date:d(y,1,19),compteId:cptC},
+    // Février
+    {id:uid(),label:'Salaire net',categ:'Salaire',montant:3200,type:'revenu',date:d(y,2,1),compteId:cptC},
+    {id:uid(),label:'Revenus locatifs',categ:'Loyers perçus',montant:850,type:'revenu',date:d(y,2,2),compteId:cptJ},
+    {id:uid(),label:'Loyer appartement',categ:'Loyer / Logement',montant:1100,type:'depense',date:d(y,2,3),compteId:cptC},
+    {id:uid(),label:'Courses bio',categ:'Alimentation',montant:310,type:'depense',date:d(y,2,7),compteId:cptJ},
+    {id:uid(),label:'Sushi Yoshi',categ:'Restaurant',montant:55,type:'depense',date:d(y,2,14),compteId:cptC},
+    {id:uid(),label:'Uber',categ:'Transport',montant:34,type:'depense',date:d(y,2,10),compteId:cptC},
+    {id:uid(),label:'Assurance vie',categ:'Assurance',montant:80,type:'depense',date:d(y,2,15),compteId:cptC},
+    // Mars
+    {id:uid(),label:'Salaire net',categ:'Salaire',montant:3200,type:'revenu',date:d(y,3,1),compteId:cptC},
+    {id:uid(),label:'Prime Q1',categ:'Prime',montant:1500,type:'revenu',date:d(y,3,15),compteId:cptC},
+    {id:uid(),label:'Revenus locatifs',categ:'Loyers perçus',montant:850,type:'revenu',date:d(y,3,2),compteId:cptJ},
+    {id:uid(),label:'Loyer appartement',categ:'Loyer / Logement',montant:1100,type:'depense',date:d(y,3,3),compteId:cptC},
+    {id:uid(),label:'Courses semaine',categ:'Alimentation',montant:260,type:'depense',date:d(y,3,9),compteId:cptJ},
+    {id:uid(),label:'Week-end Amsterdam',categ:'Voyage',montant:480,type:'depense',date:d(y,3,22),compteId:cptC},
+    {id:uid(),label:'Pressing Mars',categ:'Pressing',montant:38,type:'depense',date:d(y,3,12),compteId:cptJ},
+  ];
+  state.actifs = [
+    {id:uid(),label:'Livret A',category:'liquide',valeur:22950,mensuel:0,loyer:0,taux:3.0,fiscal:'exonere'},
+    {id:uid(),label:'LDDS',category:'liquide',valeur:12000,mensuel:0,loyer:0,taux:3.0,fiscal:'exonere'},
+    {id:uid(),label:'PEL CIC',category:'semiliquide',valeur:15000,mensuel:45,loyer:0,taux:2.25,fiscal:'flat'},
+    {id:uid(),label:'PEA — MSCI World (Amundi)',category:'semiliquide',valeur:45000,mensuel:300,loyer:0,taux:8.0,fiscal:'ps'},
+    {id:uid(),label:'CTO — ETF S&P 500',category:'semiliquide',valeur:12500,mensuel:100,loyer:0,taux:9.5,fiscal:'flat'},
+    {id:uid(),label:'Assurance Vie (fonds €)',category:'semiliquide',valeur:18000,mensuel:200,loyer:0,taux:2.8,fiscal:'flat'},
+    {id:uid(),label:'Appartement Paris 13e',category:'immobilier',valeur:320000,mensuel:0,loyer:850,taux:3.5,fiscal:'ps'},
+    {id:uid(),label:'Studio Lyon Confluence',category:'immobilier',valeur:145000,mensuel:0,loyer:620,taux:4.0,fiscal:'ps'},
+    {id:uid(),label:'Rolex Submariner 126610',category:'physique',subtype:'montre',achat:9500,valeur:14200,evolPhys:8},
+    {id:uid(),label:'Tableau — Artiste Contemporain',category:'physique',subtype:'art',achat:3200,valeur:4100,evolPhys:5},
+    {id:uid(),label:'BMW M3 2021',category:'physique',subtype:'voiture',achat:72000,valeur:58000,evolPhys:-8},
+  ];
+  state.salaire = {
+    label: 'Salaire net', montant: 3200, jour: 1, categ: 'Salaire', compteId: cptC,
+    fromMonth: 1, fromYear: y, toMonth: null, toYear: null
+  };
+  state.immoBiens = [
+    {id:'immo1',label:'Appartement Paris 13e',valeur:320000,acquisition:290000,loyer:850,creditCRD:185000,creditMens:920,apprec:3,fiscal:'nu',adresse:'45 avenue d\'Italie, 75013 Paris'},
+    {id:'immo2',label:'Studio Lyon Confluence',valeur:145000,acquisition:132000,loyer:620,creditCRD:62000,creditMens:420,apprec:2.5,fiscal:'lmnp',adresse:'12 rue Montrochet, 69002 Lyon'},
+  ];
+  state.locataires = [
+    {id:uid(),bienId:'immo1',nom:'Martin Sophie',entree:`${y-2}-09-01`,sortie:`${y-1}-08-31`,loyer:800,caution:800,notes:'EDL sortant bon état'},
+    {id:uid(),bienId:'immo1',nom:'Leroy Thomas & Alice',entree:`${y-1}-09-15`,sortie:'',loyer:850,caution:850,notes:'Bail 3 ans reconduit'},
+    {id:uid(),bienId:'immo2',nom:'Dubois Clément',entree:`${y}-01-01`,sortie:'',loyer:620,caution:620,notes:'Étudiant - garant parents'},
+  ];
+  state.charges = [
+    {id:uid(),bienId:'immo1',type:'taxe_fonciere',label:'Taxe foncière 2024',montant:1800,freq:'annuel',date:`${y}-10-15`},
+    {id:uid(),bienId:'immo1',type:'assurance_pno',label:'Assurance PNO',montant:240,freq:'annuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo1',type:'assurance_loyers',label:'GLI Garantie Loyers',montant:80,freq:'mensuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo1',type:'copropriete',label:'Charges copropriété',montant:180,freq:'mensuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo1',type:'gestion',label:'Commission agence',montant:72,freq:'mensuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo2',type:'taxe_fonciere',label:'Taxe foncière 2024',montant:650,freq:'annuel',date:`${y}-10-15`},
+    {id:uid(),bienId:'immo2',type:'assurance_pno',label:'Assurance PNO',montant:120,freq:'annuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo2',type:'copropriete',label:'Charges copropriété',montant:80,freq:'mensuel',date:`${y}-01-01`},
+    {id:uid(),bienId:'immo2',type:'entretien',label:'Entretien chaudière',montant:150,freq:'annuel',date:`${y}-03-15`},
+  ];
+  state.passifs = [
+    {id:uid(),label:'Crédit immobilier Paris 13e',crd:185000,mensualite:920,taux:1.35,echeance:'2038-06-01'},
+    {id:uid(),label:'Crédit immobilier Lyon',crd:62000,mensualite:420,taux:1.85,echeance:'2034-03-01'},
+  ];
+  // Historique démo — points sur les 12 derniers mois
+  state.priceHistory = [];
+  const livretA  = state.actifs.find(a=>a.label==='Livret A');
+  const ldds     = state.actifs.find(a=>a.label==='LDDS');
+  const rolex    = state.actifs.find(a=>a.label==='Rolex Submariner 126610');
+  const tableau  = state.actifs.find(a=>a.label==='Tableau — Artiste Contemporain');
+  const livretAHist = [18200,18700,19100,19400,19800,20200,20700,21100,21500,22000,22450,22950];
+  const lddsHist    = [10000,10200,10400,10600,10800,11000,11200,11400,11600,11800,11900,12000];
+  const rolexHist   = [9500,10200,10800,11200,11500,11800,12100,12500,12900,13400,13800,14200];
+  const tableauHist = [3200,3300,3350,3400,3500,3600,3700,3750,3850,3950,4050,4100];
+  for (let m=0; m<12; m++) {
+    const mo = ((new Date().getMonth() - 11 + m + 12) % 12) + 1;
+    const yr = new Date().getFullYear() + (new Date().getMonth() - 11 + m < 0 ? -1 : 0);
+    const date = `${yr}-${String(mo).padStart(2,'0')}-01`;
+    if (livretA)  state.priceHistory.push({id:livretA.id,  date, valeur:livretAHist[m]});
+    if (ldds)     state.priceHistory.push({id:ldds.id,     date, valeur:lddsHist[m]});
+    if (rolex)    state.priceHistory.push({id:rolex.id,    date, valeur:rolexHist[m]});
+    if (tableau)  state.priceHistory.push({id:tableau.id,  date, valeur:tableauHist[m]});
+  }
+  state.peaComptes = [
+    {id:'pea1', type:'PEA', nom:'PEA Boursorama', banque:'Boursorama', plafond:150000, courtagePct:0.5, gardePct:0},
+    {id:'pea2', type:'PEA-PME', nom:'PEA-PME CIC', banque:'CIC', plafond:225000, courtagePct:0.5, gardePct:0.4},
+    {id:'cto1', type:'CTO', nom:'CTO Trade Republic', banque:'Trade Republic', plafond:0, courtagePct:0, gardePct:0},
+  ];
+  state.peaTitres = [
+    {id:uid(), compteId:'pea1', nom:'LVMH', ticker:'MC.PAR', date:`${y-6}-03-12`, quantite:5, prix:720.00, devise:'EUR', frais:6.50, fxFraisPct:0, ter:0, ttf:true, cours:640.00},
+    {id:uid(), compteId:'pea1', nom:'ETF Amundi MSCI World', ticker:'CW8.PAR', date:`${y-6}-06-01`, quantite:120, prix:410.00, devise:'EUR', frais:24.60, fxFraisPct:0, ter:0.38, ttf:false, cours:452.30},
+    {id:uid(), compteId:'pea1', nom:'Air Liquide', ticker:'AI.PAR', date:`${y}-01-15`, quantite:12, prix:165.00, devise:'EUR', frais:9.90, fxFraisPct:0, ter:0, ttf:false, cours:172.40},
+    {id:uid(), compteId:'pea2', nom:'TotalEnergies', ticker:'TTE.PAR', date:`${y}-02-20`, quantite:20, prix:58.50, devise:'EUR', frais:5.85, fxFraisPct:0, ter:0, ttf:true, cours:56.10},
+    {id:uid(), compteId:'cto1', nom:'Apple Inc.', ticker:'AAPL', date:`${y}-01-08`, quantite:8, prix:185.20, devise:'USD', frais:1.00, fxFraisPct:0.25, ter:0, ttf:false, cours:198.50},
+    {id:uid(), compteId:'cto1', nom:'ETF S&P 500 (Physique)', ticker:'PE500.PAR', date:`${y-1}-09-10`, quantite:45, prix:38.40, devise:'EUR', frais:3.20, fxFraisPct:0, ter:0.15, ttf:false, cours:41.90},
+  ];
+  state.settings = { apiKeyAlpha: '', cacheTtlMin: 15 };
+  applySalaire();
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+initAuth();
+</script>
+</body>
+</html>
