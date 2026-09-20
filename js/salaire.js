@@ -68,14 +68,13 @@ function applySalaire() {
   }
 }
 function renderSalaireBadge() {
-  const wrap = document.getElementById('salaryBadgeWrap');
-  if (!wrap) return;
-  if (state.salaire) {
-    wrap.innerHTML = `<div class="salary-badge" onclick="openSalaireModal()" style="cursor:pointer" title="Cliquer pour modifier">
-      💼 ${state.salaire.label} · ${fmt(state.salaire.montant)}/mois · J${state.salaire.jour}
-    </div>`;
-  } else {
-    wrap.innerHTML = '';
-  }
+  const html = state.salaire
+    ? `<div class="salary-badge" onclick="openSalaireModal()" style="cursor:pointer" title="Cliquer pour modifier">
+        💼 ${state.salaire.label} · ${fmt(state.salaire.montant)}/mois · J${state.salaire.jour}
+      </div>`
+    : '';
+  ['salaryBadgeWrap','salaryBadgeWrapSettings'].forEach(id=>{
+    const wrap = document.getElementById(id);
+    if (wrap) wrap.innerHTML = html;
+  });
 }
-
