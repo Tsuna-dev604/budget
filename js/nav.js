@@ -21,15 +21,21 @@ function showSection(id, tab) {
   if (target) target.classList.add('active');
   if (tab) tab.classList.add('active');
 
-  if (typeof renderAll === 'function') renderAll();
-  // La diversification a ses propres graphiques Chart.js, coûteux :
-  // on ne les recalcule que quand on ouvre réellement cette page.
-  if (id === 'diversification' && typeof renderDiversification === 'function') renderDiversification();
-
+  // La navigation elle-même (section visible, titre) ne doit jamais être bloquée
+  // par une erreur de rendu des données (ex. souci réseau/cloud) : on l'applique d'abord.
   const mobileTitle = document.getElementById('mobileTitle');
   if (mobileTitle) mobileTitle.textContent = SECTION_TITLES[id] || '';
-
   closeSidebarMobile();
+
+  try {
+    if (typeof renderAll === 'function') renderAll();
+    // La diversification a ses propres graphiques Chart.js, coûteux :
+    // on ne les recalcule que quand on ouvre réellement cette page.
+    if (id === 'diversification' && typeof renderDiversification === 'function') renderDiversification();
+  } catch (e) {
+    console.error('Erreur lors du rendu de la section', id, e);
+    notify('Impossible d\'actualiser certaines données. Vérifiez votre connexion puis réessayez.', true);
+  }
 }
 
 // ── Sidebar rétractable (desktop) ──
