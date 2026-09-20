@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestion Patrimoine & Immobilier</title>
+<!-- Anti-flash thème : pose data-theme / sidebar-collapsed avant le premier paint -->
+<script>
+(function(){
+  try {
+    var theme = localStorage.getItem('theme');
+    if (!theme) theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    if (localStorage.getItem('sidebarCollapsed') === '1') document.documentElement.classList.add('sidebar-collapsed');
+  } catch(e) {}
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,422 +48,489 @@
   </div>
 </div>
 
-<header>
-  <div class="logo">Gestion Budget</div>
-  <div class="header-actions">
-    <span class="user-badge" id="userBadge"></span>
-    <button class="btn" onclick="exportData()">↓ Sauvegarde locale</button>
-    <button class="btn" onclick="document.getElementById('importFile').click()">↑ Charger JSON</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-    <button class="btn btn-danger" onclick="doSignOut()">Déconnexion</button>
-  </div>
-</header>
+<!-- ═══════ APPLICATION ═══════ -->
+<div class="app-shell">
 
-<nav>
-  <div class="tab active"  onclick="showSection('synthese',this)">⬡ Synthèse</div>
-  <div class="tab" onclick="showSection('budget',this)">⇄ Budget</div>
-  <div class="tab" onclick="showSection('comptes',this)">🏦 Comptes</div>
-  <div class="tab" onclick="showSection('actifs',this)">◈ Actifs &amp; Passifs</div>
-  <div class="tab" onclick="showSection('immobilier',this)">🏠 Immobilier</div>
-  <div class="tab" onclick="showSection('simu_pea',this)">◎ PEA &amp; CTO</div>
-  <div class="tab" onclick="showSection('diversification',this);renderDiversification()">⬡ Diversification</div>
-</nav>
-
-<main>
-
-<!-- ═══════ SYNTHÈSE ═══════ -->
-<section id="synthese" class="section active">
-  <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
-  <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
-
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value gold" id="kpi-net">—</div><div class="card-sub">Actifs − Passifs</div></div>
-    <div class="card card-sm"><div class="card-title">Capacité d'Épargne</div><div class="card-value green" id="kpi-epargne">—</div><div class="card-sub">Revenus − Dépenses / mois</div></div>
-    <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="kpi-comptes">—</div><div class="card-sub">Solde total</div></div>
-    <div class="card card-sm"><div class="card-title">Rendement Net Moyen</div><div class="card-value" id="kpi-rdmt">—</div><div class="card-sub">Pondéré par actif</div></div>
-  </div>
-
-  <!-- Liquidité split -->
-  <div class="grid-4" style="margin-bottom:16px">
-    <div class="card card-sm"><div class="card-title">Actifs Liquides</div><div class="card-value green" id="kpi-liquid">—</div><div class="card-sub">Livrets, cash</div></div>
-    <div class="card card-sm"><div class="card-title">Actifs Semi-liquides</div><div class="card-value gold" id="kpi-semiliquid">—</div><div class="card-sub">PEL, AV, PEA</div></div>
-    <div class="card card-sm"><div class="card-title">Actifs Illiquides</div><div class="card-value blue" id="kpi-illiquid">—</div><div class="card-sub">Immo, montres, art</div></div>
-    <div class="card card-sm"><div class="card-title">Revenus Locatifs</div><div class="card-value" id="kpi-loyers">—</div><div class="card-sub">Total loyers/mois</div></div>
-  </div>
-
-  <div class="grid-2" style="margin-bottom:16px">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Allocation du Patrimoine</span></div>
-      <div class="chart-wrap" style="height:200px"><canvas id="chartAlloc"></canvas></div>
-      <div id="allocList" style="margin-top:12px"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Stress Test Krach −30%</span></div>
-      <div class="stress-box">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Simulation d'une chute de 30% sur les actifs dynamiques</div>
-        <div id="stressResult" style="font-family:var(--font-mono);font-size:13px"></div>
-        <button class="btn btn-danger" style="margin-top:12px" onclick="runStressTest()">▶ Lancer le Stress Test</button>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <span class="logo-mark">◆</span>
+        <span class="logo-text">
+          <span class="logo-name">Patrimoine</span>
+          <span class="logo-sub">Gestion Budget</span>
+        </span>
       </div>
+      <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Réduire / étendre la navigation" aria-label="Réduire la navigation">⟨</button>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="card-header"><span class="card-title">Projection sur 10 ans (versements inclus)</span></div>
-    <div class="chart-wrap" style="height:250px"><canvas id="chartProjection"></canvas></div>
-  </div>
-</section>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-item active" title="Synthèse" onclick="showSection('synthese',this)"><span class="nav-icon">⬡</span><span class="nav-label">Synthèse</span></div>
+      <div class="nav-item" title="Budget" onclick="showSection('budget',this)"><span class="nav-icon">⇄</span><span class="nav-label">Budget</span></div>
+      <div class="nav-item" title="Liquidités" onclick="showSection('comptes',this)"><span class="nav-icon">🏦</span><span class="nav-label">Liquidités</span></div>
+      <div class="nav-item" title="Patrimoine" onclick="showSection('actifs',this)"><span class="nav-icon">◈</span><span class="nav-label">Patrimoine</span></div>
+      <div class="nav-item" title="Immobilier" onclick="showSection('immobilier',this)"><span class="nav-icon">🏠</span><span class="nav-label">Immobilier</span></div>
+      <div class="nav-item" title="Investissements" onclick="showSection('simu_pea',this)"><span class="nav-icon">◎</span><span class="nav-label">Investissements</span></div>
+      <div class="nav-item" title="Diversification" onclick="showSection('diversification',this)"><span class="nav-icon">⬢</span><span class="nav-label">Diversification</span></div>
+      <div class="nav-item" title="Simulations" onclick="showSection('simulations',this)"><span class="nav-icon">🧮</span><span class="nav-label">Simulations</span></div>
+      <div class="nav-item" title="Objectifs" onclick="showSection('objectifs',this)"><span class="nav-icon">🎯</span><span class="nav-label">Objectifs</span></div>
+    </nav>
 
-<!-- ═══════ BUDGET ═══════ -->
-<section id="budget" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <div><h2 class="section-title">Gestion du Budget</h2><p class="section-subtitle">Suivi mensuel · Récap annuel · Analyse par catégorie</p></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div id="salaryBadgeWrap"></div>
-      <button class="btn" onclick="openSalaireModal()">⚙ Salaire récurrent</button>
-      <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
+    <div class="sidebar-bottom">
+      <div class="nav-item" title="Paramètres" onclick="showSection('parametres',this)"><span class="nav-icon">⚙</span><span class="nav-label">Paramètres</span></div>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Changer de thème">
+        <span id="themeIcon">🌙</span><span class="nav-label" id="themeLabel">Mode sombre</span>
+      </button>
     </div>
-  </div>
+  </aside>
 
-  <!-- KPIs budget -->
-  <div class="grid-3" style="margin-bottom:24px">
-    <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
-  </div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
 
-  <!-- Filtres -->
-  <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-    <select id="filterBudgetType" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()">
-      <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option>
-    </select>
-    <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
-    </select>
-  </div>
-
-  <!-- Month tabs -->
-  <div class="month-tabs" id="monthTabs"></div>
-
-  <!-- Operations table -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header"><span class="card-title">Opérations</span><span id="budgetMonthLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span></div>
-    <div id="depenseSelectionBar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--bg4);border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
-      <span style="color:var(--text2)">☑ <span id="depenseSelectionCount">0</span> dépense(s) cochée(s) — Total : <span id="depenseSelectionTotal" style="color:var(--red);font-weight:600">0 €</span></span>
-      <button class="icon-btn" onclick="clearDepenseSelection()" title="Tout décocher">✕ Tout décocher</button>
+  <div class="main-area">
+    <div class="mobile-topbar">
+      <button class="mobile-menu-btn" onclick="openSidebarMobile()" aria-label="Ouvrir le menu">☰</button>
+      <span class="mobile-title" id="mobileTitle">Synthèse</span>
+      <span class="user-badge" id="userBadge"></span>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th style="width:34px"><input type="checkbox" id="checkAllDepenses" onchange="toggleAllVisibleDepenses(this.checked)" title="Cocher/décocher toutes les dépenses visibles"></th><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Compte</th><th>Type</th><th>Montant</th><th></th></tr></thead>
-        <tbody id="budgetTbody"></tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- Récap par catégorie -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <span class="card-title">Dépenses &amp; Revenus par Catégorie</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="recapPeriodLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
-        <div style="display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden">
-          <div id="recapToggleYear" class="recap-toggle active" onclick="setRecapView('year')">Année</div>
-          <div id="recapToggleMonth" class="recap-toggle" onclick="setRecapView('month')">Mois sélect.</div>
+    <main id="mainContent">
+
+    <!-- ═══════ SYNTHÈSE ═══════ -->
+    <section id="synthese" class="section active">
+      <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
+      <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value gold" id="kpi-net">—</div><div class="card-sub">Actifs − Passifs</div></div>
+        <div class="card card-sm"><div class="card-title">Capacité d'Épargne</div><div class="card-value green" id="kpi-epargne">—</div><div class="card-sub">Revenus − Dépenses / mois</div></div>
+        <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="kpi-comptes">—</div><div class="card-sub">Solde total</div></div>
+        <div class="card card-sm"><div class="card-title">Rendement Net Moyen</div><div class="card-value" id="kpi-rdmt">—</div><div class="card-sub">Pondéré par actif</div></div>
+      </div>
+
+      <!-- Liquidité split -->
+      <div class="grid-4" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Actifs Liquides</div><div class="card-value green" id="kpi-liquid">—</div><div class="card-sub">Livrets, cash</div></div>
+        <div class="card card-sm"><div class="card-title">Actifs Semi-liquides</div><div class="card-value gold" id="kpi-semiliquid">—</div><div class="card-sub">PEL, AV, PEA</div></div>
+        <div class="card card-sm"><div class="card-title">Actifs Illiquides</div><div class="card-value blue" id="kpi-illiquid">—</div><div class="card-sub">Immo, montres, art</div></div>
+        <div class="card card-sm"><div class="card-title">Revenus Locatifs</div><div class="card-value" id="kpi-loyers">—</div><div class="card-sub">Total loyers/mois</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Allocation du Patrimoine</span></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chartAlloc"></canvas></div>
+          <div id="allocList" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Stress Test Krach −30%</span></div>
+          <div class="stress-box">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Simulation d'une chute de 30% sur les actifs dynamiques</div>
+            <div id="stressResult" style="font-family:var(--font-mono);font-size:13px"></div>
+            <button class="btn btn-danger" style="margin-top:12px" onclick="runStressTest()">▶ Lancer le Stress Test</button>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="grid-2">
-      <div>
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:12px">Dépenses</div>
-        <div id="categRecapDep"></div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Projection sur 10 ans (versements inclus)</span></div>
+        <div class="chart-wrap" style="height:250px"><canvas id="chartProjection"></canvas></div>
       </div>
-      <div>
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px">Revenus</div>
-        <div id="categRecapRev"></div>
+    </section>
+
+    <!-- ═══════ BUDGET ═══════ -->
+    <section id="budget" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">Gestion du Budget</h2><p class="section-subtitle">Suivi mensuel · Récap annuel · Analyse par catégorie</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div id="salaryBadgeWrap"></div>
+          <button class="btn" onclick="openSalaireModal()">⚙ Salaire récurrent</button>
+          <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
+        </div>
       </div>
-    </div>
-  </div>
 
-</section>
-
-<!-- ═══════ COMPTES COURANTS ═══════ -->
-<section id="comptes" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <div><h2 class="section-title">🏦 Comptes Courants</h2><p class="section-subtitle">Soldes mis à jour automatiquement à chaque opération de Budget</p></div>
-    <button class="btn btn-gold" onclick="openAddCompte()">+ Nouveau compte</button>
-  </div>
-
-  <div class="grid-3" style="margin-bottom:24px">
-    <div class="card card-sm"><div class="card-title">Solde Total</div><div class="card-value gold" id="cpt-total">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Nombre de comptes</div><div class="card-value" id="cpt-count">0</div></div>
-    <div class="card card-sm"><div class="card-title">Solde le plus bas</div><div class="card-value" id="cpt-min">—</div></div>
-  </div>
-
-  <div id="comptesList" class="grid-3"></div>
-
-  <div id="doublonsCard" class="card" style="margin-top:16px;display:none">
-    <div class="card-header"><span class="card-title">⚠ Doublons potentiels détectés</span></div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">
-      Ces actifs de la catégorie "💧 Liquide" (onglet Actifs &amp; Passifs) pourraient déjà représenter le solde d'un de vos comptes courants.
-      Pour éviter de compter cet argent deux fois dans le Patrimoine Net, convertis-les en Compte Courant (le solde devient le solde initial du compte) ou supprime le doublon.
-    </p>
-    <div id="doublonsList"></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Historique de tous les comptes</span></div>
-    <div class="info-note">💡 Chaque opération de Budget (revenu ou dépense) peut être rattachée à un compte. Le solde affiché ici = Solde initial + Revenus − Dépenses de ce compte. Le total de tes Comptes Courants est désormais inclus dans le Patrimoine Net et la Diversification.</div>
-  </div>
-</section>
-
-<!-- ═══════ ACTIFS & PASSIFS ═══════ -->
-<section id="actifs" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <div><h2 class="section-title">Actifs &amp; Passifs</h2><p class="section-subtitle">Inventaire patrimonial complet</p></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn" onclick="openModal('modalPassif')">+ Passif</button>
-      <button class="btn btn-gold" onclick="openAddActif()">+ Actif</button>
-    </div>
-  </div>
-
-  <div class="grid-5" style="margin-bottom:16px">
-    <div class="card card-sm"><div class="card-title">Total Actifs</div><div class="card-value gold" id="totalActifs">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="totalComptesActifs">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Total Dettes</div><div class="card-value red" id="totalPassifs">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value" id="totalNet2">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Loyers / mois</div><div class="card-value" id="totalLoyers2">0 €</div></div>
-  </div>
-
-  <div class="info-note" style="margin-bottom:16px">★ Projections +1/5/10 ans incluent les versements mensuels (formule des annuités). ✏ Cliquez sur ✎ pour modifier un actif. 🏦 Le Patrimoine Net inclut désormais le solde de vos Comptes Courants (onglet dédié).</div>
-
-  <!-- Liquides -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <span class="card-title">💧 Actifs Liquides — Livrets &amp; Cash</span>
-      <span class="badge badge-green">Disponible immédiatement</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
-        <tbody id="actifLiqTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Semi-liquides -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <span class="card-title">🔒 Actifs Semi-liquides — PEL, AV, PEA, Crypto</span>
-      <span class="badge badge-gold">Rachat sous conditions</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
-        <tbody id="actifSemiTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Immobilier -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <span class="card-title">🏠 Actifs Immobiliers</span>
-      <span class="badge badge-blue">Illiquide</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Libellé</th><th>Valeur</th><th>Loyer/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Rendement Loc.</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
-        <tbody id="actifImmTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Biens physiques -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-      <span class="card-title">💎 Biens Physiques — Montres, Art, Voitures, Objets</span>
-      <span class="badge badge-purple">Actifs de collection</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Libellé</th><th>Sous-type</th><th>Valeur d'achat</th><th>Valeur actuelle</th><th>+/−</th><th>Évol. annuelle est.</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
-        <tbody id="actifPhysTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Passifs -->
-  <div class="card">
-    <div class="card-title" style="margin-bottom:16px">📋 Passifs — Dettes &amp; Crédits</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Libellé</th><th>Capital Restant Dû</th><th>Mensualité</th><th>Taux</th><th>Échéance</th><th></th></tr></thead>
-        <tbody id="passifTbody"></tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════ IMMOBILIER ═══════ -->
-<section id="immobilier" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <div><h2 class="section-title">🏠 Gestion Immobilière</h2><p class="section-subtitle">Rendement · Charges · Locataires · ROI</p></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn" onclick="openLocataireModal()">+ Locataire</button>
-      <button class="btn" onclick="openChargeModal()">+ Charge</button>
-      <button class="btn btn-gold" onclick="openImmoActifModal()">+ Bien immobilier</button>
-    </div>
-  </div>
-
-  <!-- KPIs globaux immo -->
-  <div class="grid-5" style="margin-bottom:20px" id="immoKpiGrid">
-    <div class="card card-sm"><div class="card-title">Loyers Bruts/mois</div><div class="card-value gold" id="ikpi-loyers">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Charges Totales/mois</div><div class="card-value red" id="ikpi-charges">0 €</div></div>
-    <div class="card card-sm"><div class="card-title">Net avant impôts/mois</div><div class="card-value green" id="ikpi-net">0 €</div><div class="card-sub">Hors fiscalité IR</div></div>
-    <div class="card card-sm"><div class="card-title">Net après impôts/mois</div><div class="card-value" id="ikpi-net-apres">0 €</div><div class="card-sub">PS + IR estimés</div></div>
-    <div class="card card-sm"><div class="card-title">Valeur Patrimoine</div><div class="card-value gold" id="ikpi-valeur">0 €</div></div>
-  </div>
-
-  <!-- Sub-tabs -->
-  <div class="sub-tabs">
-    <div class="sub-tab active" onclick="showImmoTab('bien-list',this)">▦ Mes Biens</div>
-    <div class="sub-tab" onclick="showImmoTab('locataires',this)">👤 Locataires</div>
-    <div class="sub-tab" onclick="showImmoTab('charges-tab',this)">💰 Charges &amp; Taxes</div>
-    <div class="sub-tab" onclick="showImmoTab('rendement',this)">📊 Rendement &amp; ROI</div>
-  </div>
-
-  <!-- Biens -->
-  <div class="sub-section active" id="bien-list">
-    <div id="immoBiensList">
-      <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun bien immobilier. Ajoutez-en un ci-dessus ou ils apparaîtront ici depuis vos actifs.</div>
-    </div>
-  </div>
-
-  <!-- Locataires -->
-  <div class="sub-section" id="locataires">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Historique Locataires</span></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Bien</th><th>Nom</th><th>Entrée</th><th>Sortie</th><th>Loyer CC</th><th>Caution</th><th>Statut</th><th></th></tr></thead>
-          <tbody id="locatairesTbody"></tbody>
-        </table>
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
       </div>
-    </div>
-  </div>
 
-  <!-- Charges -->
-  <div class="sub-section" id="charges-tab">
-    <div class="info-note" style="margin-bottom:16px">Les charges annuelles sont réparties mensuellement pour calculer le rendement net. Taxe foncière, assurances, eau, électricité, entretien…</div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Toutes les Charges par Bien</span></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Bien</th><th>Type de charge</th><th>Montant</th><th>Fréquence</th><th>Mois/an</th><th>Date</th><th></th></tr></thead>
-          <tbody id="chargesTbody"></tbody>
-        </table>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <select id="filterBudgetType" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()">
+          <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option>
+        </select>
+        <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
+        </select>
       </div>
-    </div>
-  </div>
 
-  <!-- Rendement & ROI -->
-  <div class="sub-section" id="rendement">
-    <div id="rendementList">
-      <div style="text-align:center;padding:40px;color:var(--text3)">Ajoutez des biens pour voir les calculs de rendement.</div>
-    </div>
-  </div>
-</section>
+      <div class="month-tabs" id="monthTabs"></div>
 
-<!-- ═══════ PEA ═══════ -->
-<section id="simu_pea" class="section">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-    <div><h2 class="section-title">PEA &amp; CTO — Portefeuille Titres</h2><p class="section-subtitle">Enveloppes fiscales · Frais réels · Cours en temps réel (API)</p></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn" onclick="openApiSettingsModal()">⚙ Cours API</button>
-      <button class="btn btn-blue" onclick="refreshAllPeaCours()">🔄 Actualiser tous les cours</button>
-      <button class="btn" onclick="openAddPeaCompte()">+ Ajouter un compte</button>
-      <button class="btn btn-gold" onclick="openAddPeaTitre()">+ Ajouter une ligne</button>
-    </div>
-  </div>
-
-  <div class="grid-4" style="margin-bottom:16px">
-    <div class="card card-sm"><div class="card-title">Total Investi</div><div class="card-value gold" id="pkpi-investi">0 €</div><div class="card-sub">Achat + frais (courtage, change, TTF)</div></div>
-    <div class="card card-sm"><div class="card-title">Valeur Actuelle</div><div class="card-value blue" id="pkpi-valeur">0 €</div><div class="card-sub">Aux derniers cours connus</div></div>
-    <div class="card card-sm"><div class="card-title">Plus/Moins-value</div><div class="card-value" id="pkpi-pv">0 €</div><div class="card-sub">Latente, brute de fiscalité</div></div>
-    <div class="card card-sm"><div class="card-title">Performance</div><div class="card-value" id="pkpi-perf">0 %</div><div class="card-sub">Sur capital investi</div></div>
-  </div>
-
-  <div class="grid-2" style="margin-bottom:24px">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Répartition du Portefeuille</span></div>
-      <div class="chart-wrap" style="height:220px"><canvas id="chartPeaTitres"></canvas></div>
-      <div id="peaTitresList" style="margin-top:12px"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Répartition par Ligne — Détail</span></div>
-      <div id="peaTitresBreakdown" style="font-size:12px"></div>
-    </div>
-  </div>
-
-  <div class="info-note" style="margin-bottom:16px">
-    💡 <strong>PEA</strong> : plafond de versement 150 000 € (hors PEA-PME 225 000 €), exonération IR après 5 ans (PS 17,2% restants) — avant 5 ans, retrait = Flat Tax 30% + clôture. <strong>CTO</strong> : pas de plafond, Flat Tax (PFU) 30% sur les plus-values et dividendes dès le 1er euro, option barème progressif possible. Frais de change ~0,25-1% appliqués sur les titres hors zone EUR. TTF 0,4% sur les actions françaises de plus de 1 Md€ de capitalisation à l'achat.
-  </div>
-
-  <div id="peaComptesList">
-    <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun compte. Cliquez sur "+ Ajouter un compte" pour commencer.</div>
-  </div>
-</section>
-
-
-<!-- ═══════ DIVERSIFICATION ═══════ -->
-<section id="diversification" class="section">
-  <h2 class="section-title">Score de Diversification</h2>
-  <p class="section-subtitle">Analyse de la répartition géographique, sectorielle et par enveloppe fiscale de votre patrimoine</p>
-
-  <!-- Score global -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px" id="divKpiGrid">
-    <div class="card card-sm"><div class="card-title">Score Global</div><div class="card-value gold" id="divScore">—</div><div class="card-sub">Sur 100 pts</div></div>
-    <div class="card card-sm"><div class="card-title">Classes d'actifs</div><div class="card-value" id="divClasses">—</div><div class="card-sub">Indice Herfindahl</div></div>
-    <div class="card card-sm"><div class="card-title">Enveloppes fiscales</div><div class="card-value" id="divEnveloppes">—</div><div class="card-sub">Optimisation fiscale</div></div>
-    <div class="card card-sm"><div class="card-title">Liquidité</div><div class="card-value" id="divLiquidite">—</div><div class="card-sub">Ratio actifs liquides</div></div>
-  </div>
-
-  <div class="grid-2" style="margin-bottom:16px">
-    <!-- Jauge score + recommandations -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Jauge de Diversification</span></div>
-      <div id="divGauge" style="margin:12px 0"></div>
-      <hr class="divider">
-      <div class="card-title" style="margin-bottom:12px">Recommandations</div>
-      <div id="divRecos" style="font-size:13px;line-height:1.8"></div>
-    </div>
-    <!-- Donut classes d'actifs -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Répartition par Classe d'Actif</span></div>
-      <div class="chart-wrap" style="height:220px"><canvas id="chartDivClasses"></canvas></div>
-      <div id="divClassesList" style="margin-top:12px"></div>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <!-- Enveloppes fiscales -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Répartition Fiscale</span></div>
-      <div class="chart-wrap" style="height:200px"><canvas id="chartDivFiscal"></canvas></div>
-      <div id="divFiscalList" style="margin-top:12px"></div>
-      <div class="info-note" style="margin-top:12px">
-        PEA : PS 17,2% après 5 ans | CTO : Flat Tax 30% | AV : Flat Tax 30% ou PS | Livrets : Exonéré
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><span class="card-title">Opérations</span><span id="budgetMonthLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span></div>
+        <div id="depenseSelectionBar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--bg4);border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
+          <span style="color:var(--text2)">☑ <span id="depenseSelectionCount">0</span> dépense(s) cochée(s) — Total : <span id="depenseSelectionTotal" style="color:var(--red);font-weight:600">0 €</span></span>
+          <button class="icon-btn" onclick="clearDepenseSelection()" title="Tout décocher">✕ Tout décocher</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:34px"><input type="checkbox" id="checkAllDepenses" onchange="toggleAllVisibleDepenses(this.checked)" title="Cocher/décocher toutes les dépenses visibles"></th><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Compte</th><th>Type</th><th>Montant</th><th></th></tr></thead>
+            <tbody id="budgetTbody"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
-    <!-- Matrice de risque -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Matrice Rendement / Risque</span></div>
-      <div class="chart-wrap" style="height:220px"><canvas id="chartDivRisque"></canvas></div>
-      <div id="divRisqueNote" style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:8px"></div>
-    </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">Dépenses &amp; Revenus par Catégorie</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="recapPeriodLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
+            <div style="display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden">
+              <div id="recapToggleYear" class="recap-toggle active" onclick="setRecapView('year')">Année</div>
+              <div id="recapToggleMonth" class="recap-toggle" onclick="setRecapView('month')">Mois sélect.</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:12px">Dépenses</div>
+            <div id="categRecapDep"></div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px">Revenus</div>
+            <div id="categRecapRev"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════ COMPTES COURANTS ═══════ -->
+    <section id="comptes" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">🏦 Liquidités — Comptes Courants</h2><p class="section-subtitle">Soldes mis à jour automatiquement à chaque opération de Budget</p></div>
+        <button class="btn btn-gold" onclick="openAddCompte()">+ Nouveau compte</button>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="card card-sm"><div class="card-title">Solde Total</div><div class="card-value gold" id="cpt-total">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Nombre de comptes</div><div class="card-value" id="cpt-count">0</div></div>
+        <div class="card card-sm"><div class="card-title">Solde le plus bas</div><div class="card-value" id="cpt-min">—</div></div>
+      </div>
+
+      <div id="comptesList" class="grid-3"></div>
+
+      <div id="doublonsCard" class="card" style="margin-top:16px;display:none">
+        <div class="card-header"><span class="card-title">⚠ Doublons potentiels détectés</span></div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">
+          Ces actifs de la catégorie "💧 Liquide" (onglet Patrimoine) pourraient déjà représenter le solde d'un de vos comptes courants.
+          Pour éviter de compter cet argent deux fois dans le Patrimoine Net, convertis-les en Compte Courant (le solde devient le solde initial du compte) ou supprime le doublon.
+        </p>
+        <div id="doublonsList"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">Historique de tous les comptes</span></div>
+        <div class="info-note">💡 Chaque opération de Budget (revenu ou dépense) peut être rattachée à un compte. Le solde affiché ici = Solde initial + Revenus − Dépenses de ce compte. Le total de tes Comptes Courants est désormais inclus dans le Patrimoine Net et la Diversification.</div>
+      </div>
+    </section>
+
+    <!-- ═══════ ACTIFS & PASSIFS (Patrimoine) ═══════ -->
+    <section id="actifs" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">Patrimoine — Actifs &amp; Passifs</h2><p class="section-subtitle">Inventaire patrimonial complet</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" onclick="openModal('modalPassif')">+ Passif</button>
+          <button class="btn btn-gold" onclick="openAddActif()">+ Actif</button>
+        </div>
+      </div>
+
+      <div class="grid-5" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Total Actifs</div><div class="card-value gold" id="totalActifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="totalComptesActifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Total Dettes</div><div class="card-value red" id="totalPassifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value" id="totalNet2">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Loyers / mois</div><div class="card-value" id="totalLoyers2">0 €</div></div>
+      </div>
+
+      <div class="info-note" style="margin-bottom:16px">★ Projections +1/5/10 ans incluent les versements mensuels (formule des annuités). ✏ Cliquez sur ✎ pour modifier un actif. 🏦 Le Patrimoine Net inclut désormais le solde de vos Comptes Courants (onglet Liquidités).</div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">💧 Actifs Liquides — Livrets &amp; Cash</span>
+          <span class="badge badge-green">Disponible immédiatement</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+            <tbody id="actifLiqTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🔒 Actifs Semi-liquides — PEL, AV, PEA, Crypto</span>
+          <span class="badge badge-gold">Rachat sous conditions</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+            <tbody id="actifSemiTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">🏠 Actifs Immobiliers</span>
+          <span class="badge badge-blue">Illiquide</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Libellé</th><th>Valeur</th><th>Loyer/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Rendement Loc.</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+            <tbody id="actifImmTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">💎 Biens Physiques — Montres, Art, Voitures, Objets</span>
+          <span class="badge badge-purple">Actifs de collection</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Libellé</th><th>Sous-type</th><th>Valeur d'achat</th><th>Valeur actuelle</th><th>+/−</th><th>Évol. annuelle est.</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+            <tbody id="actifPhysTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">📋 Passifs — Dettes &amp; Crédits</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Libellé</th><th>Capital Restant Dû</th><th>Mensualité</th><th>Taux</th><th>Échéance</th><th></th></tr></thead>
+            <tbody id="passifTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ IMMOBILIER ═══════ -->
+    <section id="immobilier" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">🏠 Gestion Immobilière</h2><p class="section-subtitle">Rendement · Charges · Locataires · ROI</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" onclick="openLocataireModal()">+ Locataire</button>
+          <button class="btn" onclick="openChargeModal()">+ Charge</button>
+          <button class="btn btn-gold" onclick="openImmoActifModal()">+ Bien immobilier</button>
+        </div>
+      </div>
+
+      <div class="grid-5" style="margin-bottom:20px" id="immoKpiGrid">
+        <div class="card card-sm"><div class="card-title">Loyers Bruts/mois</div><div class="card-value gold" id="ikpi-loyers">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Charges Totales/mois</div><div class="card-value red" id="ikpi-charges">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Net avant impôts/mois</div><div class="card-value green" id="ikpi-net">0 €</div><div class="card-sub">Hors fiscalité IR</div></div>
+        <div class="card card-sm"><div class="card-title">Net après impôts/mois</div><div class="card-value" id="ikpi-net-apres">0 €</div><div class="card-sub">PS + IR estimés</div></div>
+        <div class="card card-sm"><div class="card-title">Valeur Patrimoine</div><div class="card-value gold" id="ikpi-valeur">0 €</div></div>
+      </div>
+
+      <div class="sub-tabs">
+        <div class="sub-tab active" onclick="showImmoTab('bien-list',this)">▦ Mes Biens</div>
+        <div class="sub-tab" onclick="showImmoTab('locataires',this)">👤 Locataires</div>
+        <div class="sub-tab" onclick="showImmoTab('charges-tab',this)">💰 Charges &amp; Taxes</div>
+        <div class="sub-tab" onclick="showImmoTab('rendement',this)">📊 Rendement &amp; ROI</div>
+      </div>
+
+      <div class="sub-section active" id="bien-list">
+        <div id="immoBiensList">
+          <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun bien immobilier. Ajoutez-en un ci-dessus ou ils apparaîtront ici depuis vos actifs.</div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="locataires">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Historique Locataires</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bien</th><th>Nom</th><th>Entrée</th><th>Sortie</th><th>Loyer CC</th><th>Caution</th><th>Statut</th><th></th></tr></thead>
+              <tbody id="locatairesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="charges-tab">
+        <div class="info-note" style="margin-bottom:16px">Les charges annuelles sont réparties mensuellement pour calculer le rendement net. Taxe foncière, assurances, eau, électricité, entretien…</div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Toutes les Charges par Bien</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bien</th><th>Type de charge</th><th>Montant</th><th>Fréquence</th><th>Mois/an</th><th>Date</th><th></th></tr></thead>
+              <tbody id="chargesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="rendement">
+        <div id="rendementList">
+          <div style="text-align:center;padding:40px;color:var(--text3)">Ajoutez des biens pour voir les calculs de rendement.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ PEA (Investissements) ═══════ -->
+    <section id="simu_pea" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div><h2 class="section-title">Investissements — PEA &amp; CTO</h2><p class="section-subtitle">Enveloppes fiscales · Frais réels · Cours en temps réel (API)</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" onclick="openApiSettingsModal()">⚙ Cours API</button>
+          <button class="btn btn-blue" onclick="refreshAllPeaCours()">🔄 Actualiser tous les cours</button>
+          <button class="btn" onclick="openAddPeaCompte()">+ Ajouter un compte</button>
+          <button class="btn btn-gold" onclick="openAddPeaTitre()">+ Ajouter une ligne</button>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Total Investi</div><div class="card-value gold" id="pkpi-investi">0 €</div><div class="card-sub">Achat + frais (courtage, change, TTF)</div></div>
+        <div class="card card-sm"><div class="card-title">Valeur Actuelle</div><div class="card-value blue" id="pkpi-valeur">0 €</div><div class="card-sub">Aux derniers cours connus</div></div>
+        <div class="card card-sm"><div class="card-title">Plus/Moins-value</div><div class="card-value" id="pkpi-pv">0 €</div><div class="card-sub">Latente, brute de fiscalité</div></div>
+        <div class="card card-sm"><div class="card-title">Performance</div><div class="card-value" id="pkpi-perf">0 %</div><div class="card-sub">Sur capital investi</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition du Portefeuille</span></div>
+          <div class="chart-wrap" style="height:220px"><canvas id="chartPeaTitres"></canvas></div>
+          <div id="peaTitresList" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition par Ligne — Détail</span></div>
+          <div id="peaTitresBreakdown" style="font-size:12px"></div>
+        </div>
+      </div>
+
+      <div class="info-note" style="margin-bottom:16px">
+        💡 <strong>PEA</strong> : plafond de versement 150 000 € (hors PEA-PME 225 000 €), exonération IR après 5 ans (PS 17,2% restants) — avant 5 ans, retrait = Flat Tax 30% + clôture. <strong>CTO</strong> : pas de plafond, Flat Tax (PFU) 30% sur les plus-values et dividendes dès le 1er euro, option barème progressif possible. Frais de change ~0,25-1% appliqués sur les titres hors zone EUR. TTF 0,4% sur les actions françaises de plus de 1 Md€ de capitalisation à l'achat.
+      </div>
+
+      <div id="peaComptesList">
+        <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun compte. Cliquez sur "+ Ajouter un compte" pour commencer.</div>
+      </div>
+    </section>
+
+    <!-- ═══════ DIVERSIFICATION ═══════ -->
+    <section id="diversification" class="section">
+      <h2 class="section-title">Diversification du Patrimoine</h2>
+      <p class="section-subtitle">Répartition par classe d'actif et par enveloppe fiscale</p>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px" id="divKpiGrid">
+        <div class="card card-sm"><div class="card-title">Score Global</div><div class="card-value gold" id="divScore">—</div><div class="card-sub">Sur 100 pts</div></div>
+        <div class="card card-sm"><div class="card-title">Classes d'actifs</div><div class="card-value" id="divClasses">—</div><div class="card-sub">Indice Herfindahl</div></div>
+        <div class="card card-sm"><div class="card-title">Enveloppes fiscales</div><div class="card-value" id="divEnveloppes">—</div><div class="card-sub">Optimisation fiscale</div></div>
+        <div class="card card-sm"><div class="card-title">Liquidité</div><div class="card-value" id="divLiquidite">—</div><div class="card-sub">Ratio actifs liquides</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Jauge de Diversification</span></div>
+          <div id="divGauge" style="margin:12px 0"></div>
+          <hr class="divider">
+          <div class="card-title" style="margin-bottom:12px">Recommandations</div>
+          <div id="divRecos" style="font-size:13px;line-height:1.8"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition par Classe d'Actif</span></div>
+          <div class="chart-wrap" style="height:220px"><canvas id="chartDivClasses"></canvas></div>
+          <div id="divClassesList" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition Fiscale</span></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chartDivFiscal"></canvas></div>
+          <div id="divFiscalList" style="margin-top:12px"></div>
+          <div class="info-note" style="margin-top:12px">
+            PEA : PS 17,2% après 5 ans | CTO : Flat Tax 30% | AV : Flat Tax 30% ou PS | Livrets : Exonéré
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Matrice Rendement / Risque</span></div>
+          <div class="chart-wrap" style="height:220px"><canvas id="chartDivRisque"></canvas></div>
+          <div id="divRisqueNote" style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="info-note" style="margin-top:16px">
+        ℹ Cette page fusionnera avec « Patrimoine » lors d'une prochaine phase de refonte (répartition factuelle, sans score arbitraire /100).
+      </div>
+    </section>
+
+    <!-- ═══════ SIMULATIONS (à venir) ═══════ -->
+    <section id="simulations" class="section">
+      <h2 class="section-title">Simulations</h2>
+      <p class="section-subtitle">Simulateur patrimonial, simulateur immobilier, assurance-vie</p>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🧮</div>
+          <div class="empty-state-title">Bientôt disponible</div>
+          <div class="empty-state-text">Cette page accueillera le simulateur patrimonial (scénarios prudent / central / dynamique), le simulateur d'achat immobilier et le simulateur d'assurance-vie, séparés de vos données réelles.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ OBJECTIFS (à venir) ═══════ -->
+    <section id="objectifs" class="section">
+      <h2 class="section-title">Objectifs</h2>
+      <p class="section-subtitle">Suivi de vos objectifs financiers</p>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🎯</div>
+          <div class="empty-state-title">Bientôt disponible</div>
+          <div class="empty-state-text">Vous pourrez y définir des objectifs (sécurité financière, apport immobilier, patrimoine cible…) et suivre leur progression et l'effort d'épargne mensuel nécessaire.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ PARAMÈTRES ═══════ -->
+    <section id="parametres" class="section">
+      <h2 class="section-title">Paramètres</h2>
+      <p class="section-subtitle">Compte, sauvegarde et préférences</p>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Compte</span></div>
+          <div class="user-badge" id="userBadgeSettings" style="font-size:13px;color:var(--text);padding:0 0 14px 0"></div>
+          <button class="btn btn-danger" onclick="doSignOut()">Déconnexion</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Sauvegarde locale</span></div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Vos données sont synchronisées automatiquement sur Supabase. Cette sauvegarde JSON locale sert de filet de secours.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" onclick="exportData()">↓ Exporter (JSON)</button>
+            <button class="btn" onclick="document.getElementById('importFile').click()">↑ Importer un fichier JSON</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Salaire récurrent</span></div>
+          <div id="salaryBadgeWrapSettings" style="margin-bottom:14px"></div>
+          <button class="btn btn-gold" onclick="openSalaireModal()">⚙ Configurer le salaire récurrent</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Cours en temps réel (API)</span></div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Clé API Alpha Vantage utilisée pour actualiser les cours PEA / CTO.</p>
+          <button class="btn" onclick="openApiSettingsModal()">⚙ Paramètres API</button>
+        </div>
+      </div>
+    </section>
+
+    </main>
   </div>
-</section>
-
-
-</main>
+</div>
 
 <!-- ═══════════════════════ MODALS ═══════════════════════ -->
 
@@ -521,7 +599,6 @@
 
     <div class="form-group"><label>Libellé</label><input type="text" id="aLabel" placeholder="ex: Livret A, Appartement Bordeaux..."></div>
 
-    <!-- Champs financiers (liquide/semiliquide/immo) -->
     <div id="fieldsFinancier">
       <div class="grid-2">
         <div class="form-group"><label>Valeur actuelle (€)</label><input type="number" id="aValeur" placeholder="0"></div>
@@ -543,7 +620,6 @@
       </div>
     </div>
 
-    <!-- Champs biens physiques -->
     <div id="fieldsPhysique" style="display:none">
       <div class="form-group">
         <label>Sous-type</label>
@@ -869,10 +945,10 @@
 
 
 <!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
-<!-- Config Supabase à éditer avant déploiement (voir js/config.js) -->
 <script src="js/config.js"></script>
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/nav.js"></script>
 <script src="js/budget.js"></script>
