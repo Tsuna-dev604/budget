@@ -43,3 +43,21 @@ function notify(msg, err=false) {
   setTimeout(()=>n.className='notif', 2800);
 }
 
+// Génère les barres "Catégorie — montant (%)" à partir d'une liste d'opérations budget déjà filtrée.
+// Utilisé par le récapitulatif de la page Budget ET par le widget "Où va mon argent ?" de la Synthèse.
+function categBarListHtml(items, type) {
+  const map = {};
+  items.filter(b=>b.type===type).forEach(b=>{
+    const c = b.categ||'Autre';
+    map[c] = (map[c]||0)+b.montant;
+  });
+  const total = Object.values(map).reduce((a,v)=>a+v,0)||1;
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;align-items:center">
+        <span style="color:${CATEG_COLORS[c]||'var(--text3)'}">● ${c}</span>
+        <span style="font-family:var(--font-mono);white-space:nowrap">${fmt(v)} <span style="color:var(--text3)">(${fmtPct(v/total*100,0)})</span></span>
+      </div>
+      <div class="categ-bar-wrap"><div class="categ-bar" style="width:${v/total*100}%;background:${CATEG_COLORS[c]||'var(--text3)'}"></div></div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:12px">Aucune donnée pour cette période</div>';
+}
