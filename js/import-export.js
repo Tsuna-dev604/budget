@@ -15,7 +15,7 @@ function importData(event) {
   const reader=new FileReader();
   reader.onload=e=>{
     try{const p=JSON.parse(e.target.result);if(p.budget!==undefined){
-      state={budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],settings:{apiKeyAlpha:'',cacheTtlMin:15},...p};
+      state={budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],budgetPrevisionnel:{},settings:{apiKeyAlpha:'',cacheTtlMin:15},...p};
       renderAll();notify('Données importées');
     }else notify('Format invalide',true);}
     catch{notify('Erreur lecture fichier',true);}
