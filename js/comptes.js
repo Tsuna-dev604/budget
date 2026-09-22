@@ -1,10 +1,14 @@
 // ═══════════════════════════════════════
 //  Comptes courants : CRUD et calculs de solde
 // ═══════════════════════════════════════
-function getSoldeCompte(compteId) {
+// Solde d'un compte. Sans dateStr : solde actuel (comportement historique, inchangé).
+// Avec dateStr : solde exact reconstruit à cette date, en ne comptant que les opérations
+// antérieures ou égales — permet un historique fiable sans données inventées.
+function getSoldeCompte(compteId, dateStr) {
   const c = state.comptes.find(x=>x.id===compteId);
   if (!c) return 0;
-  const mvts = state.budget.filter(b=>b.compteId===compteId);
+  let mvts = state.budget.filter(b=>b.compteId===compteId);
+  if (dateStr) mvts = mvts.filter(b=>b.date<=dateStr);
   const rev = mvts.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
   const dep = mvts.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
   return (c.soldeInitial||0) + rev - dep;
@@ -142,4 +146,3 @@ function convertActifToCompte(actifId) {
   notify('Actif converti en Compte Courant');
   renderAll();
 }
-
