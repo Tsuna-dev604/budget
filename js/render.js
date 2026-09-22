@@ -5,6 +5,7 @@ function renderAllInner() {
   recordPatrimoineSnapshot();
   renderBudgetTable();
   renderComptes();
+  renderLiquidites();
   renderActifs();
   renderPassifs();
   renderSynthese();
