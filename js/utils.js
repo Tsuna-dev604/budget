@@ -5,6 +5,17 @@ const uid = () => Math.random().toString(36).slice(2,9);
 const today = () => new Date().toISOString().slice(0,10);
 const currentYear = () => new Date().getFullYear();
 
+// Filtres temporels standard, réutilisés par tout graphique historique (Synthèse, Liquidités…)
+const PERIODES = [
+  {key:'1m', label:'1 mois',  mois:1},
+  {key:'3m', label:'3 mois',  mois:3},
+  {key:'6m', label:'6 mois',  mois:6},
+  {key:'1a', label:'1 an',    mois:12},
+  {key:'3a', label:'3 ans',   mois:36},
+  {key:'5a', label:'5 ans',   mois:60},
+  {key:'tout', label:'Tout',  mois:null},
+];
+
 function fmt(v, dec=2) {
   if (v===undefined||v===null||isNaN(v)) return '—';
   return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v);
