@@ -75,7 +75,7 @@ async function loadCloudState() {
     const { data, error } = await sb.from('budget_data').select('data').eq('user_id', currentUser.id).maybeSingle();
     if (error) { console.error(error); notify('Erreur de chargement cloud', true); return; }
     if (data && data.data) {
-      state = { budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],settings:{apiKeyAlpha:'',cacheTtlMin:15}, ...data.data };
+      state = { budget:[],actifs:[],passifs:[],salaire:null,immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],budgetPrevisionnel:{},settings:{apiKeyAlpha:'',cacheTtlMin:15}, ...data.data };
     }
     // Sinon : aucune donnée en base pour ce compte -> on part d'un état vide (state initial).
   } finally {
