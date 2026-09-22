@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════
 //  État global (state) et constantes (catégories, couleurs)
 // ═══════════════════════════════════════
-let state = { budget: [], actifs: [], passifs: [], salaire: null, immoBiens: [], locataires: [], charges: [], priceHistory: [], patrimoineHistory: [], comptes: [], peaComptes: [], peaTitres: [], settings: { apiKeyAlpha: '', cacheTtlMin: 15 } };
+let state = { budget: [], actifs: [], passifs: [], salaire: null, immoBiens: [], locataires: [], charges: [], priceHistory: [], patrimoineHistory: [], comptes: [], peaComptes: [], peaTitres: [], budgetPrevisionnel: {}, settings: { apiKeyAlpha: '', cacheTtlMin: 15 } };
 
 const CATEG_DEPENSE = ['Alimentation','Restaurant','Bar / Café','Transport','Carburant','Pressing','Abonnement','Banque','Assurance','Loyer / Logement','Santé','Loisirs','Voyage','Shopping','Virement','Épargne','Autre'];
 const CATEG_REVENU  = ['Salaire','Freelance','Loyers perçus','Dividendes','Virement reçu','Prime','Remboursement','Autre'];
