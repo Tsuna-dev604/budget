@@ -9,16 +9,6 @@ let synthesePeriod = '1a'; // '1m','3m','6m','1a','3a','5a','tout'
 let syntheseSeries = { net:true, actifs:true, passifs:true };
 let syntheseDepPeriode = 'mois'; // 'mois' | 'trimestre' | 'annee'
 
-const PERIODES = [
-  {key:'1m', label:'1 mois',  mois:1},
-  {key:'3m', label:'3 mois',  mois:3},
-  {key:'6m', label:'6 mois',  mois:6},
-  {key:'1a', label:'1 an',    mois:12},
-  {key:'3a', label:'3 ans',   mois:36},
-  {key:'5a', label:'5 ans',   mois:60},
-  {key:'tout', label:'Tout',  mois:null},
-];
-
 function renderSynthese() {
   document.getElementById('lastUpdated').textContent = 'Dernière mise à jour : '+new Date().toLocaleString('fr-FR');
   renderSyntheseKpis();
@@ -160,10 +150,7 @@ function renderDepensesWidget() {
 // ── Ligne 4 : flux du mois ──
 function renderFluxMois() {
   const {rev, dep, solde} = getEpargneMoisCourant();
-  const investiMensuel = Math.max(0, Math.min(solde, state.actifs
-    .filter(a=>a.category==='liquide'||a.category==='semiliquide')
-    .reduce((s,a)=>s+(a.mensuel||0),0)));
-  const cash = solde - investiMensuel;
+  const {cash, investi} = getCashInvestiSplit(solde);
 
   const step = (label, val, color) => `
     <div style="text-align:center;flex:1;min-width:110px">
@@ -183,7 +170,7 @@ function renderFluxMois() {
     <hr class="divider">
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
       ${step('Cash conservé', cash, 'var(--text)')}
-      ${step('Investi (versements programmés)', investiMensuel, 'var(--blue)')}
+      ${step('Investi (versements programmés)', investi, 'var(--blue)')}
     </div>
     <div class="info-note" style="text-align:center;margin-top:14px">Mois calendaire en cours (${new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}). "Investi" = versements mensuels déjà programmés sur vos actifs liquides/semi-liquides.</div>`;
 }
