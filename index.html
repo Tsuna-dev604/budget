@@ -199,10 +199,11 @@
         </div>
       </div>
 
-      <div class="grid-3" style="margin-bottom:24px">
+      <div class="grid-4" style="margin-bottom:24px">
         <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
         <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
         <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Taux d'Épargne</div><div class="card-value" id="bTauxEpargne">—</div></div>
       </div>
 
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
@@ -235,8 +236,9 @@
           <div style="display:flex;align-items:center;gap:8px">
             <span id="recapPeriodLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
             <div style="display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden">
-              <div id="recapToggleYear" class="recap-toggle active" onclick="setRecapView('year')">Année</div>
-              <div id="recapToggleMonth" class="recap-toggle" onclick="setRecapView('month')">Mois sélect.</div>
+              <div id="recapToggleMois" class="recap-toggle active" onclick="setRecapView('mois')">Mois</div>
+              <div id="recapToggleTrimestre" class="recap-toggle" onclick="setRecapView('trimestre')">Trimestre</div>
+              <div id="recapToggleAnnee" class="recap-toggle" onclick="setRecapView('annee')">Année</div>
             </div>
           </div>
         </div>
@@ -252,19 +254,61 @@
         </div>
       </div>
 
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Budget Prévisionnel vs Réel</span>
+            <span id="previsionRefLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Catégorie</th><th>Prévu / mois</th><th>Réel</th><th>Écart</th></tr></thead>
+              <tbody id="previsionTbody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px">
+            <select id="previsionAddCateg" onchange="addPrevisionCateg()" style="max-width:320px"></select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Anomalies de Dépenses</span></div>
+          <p style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:14px">Comparaison simple avec la moyenne des 6 derniers mois — aucune donnée n'est envoyée à un service externe.</p>
+          <div id="anomaliesList"></div>
+        </div>
+      </div>
+
     </section>
 
-    <!-- ═══════ COMPTES COURANTS ═══════ -->
+    <!-- ═══════ COMPTES COURANTS / LIQUIDITÉS ═══════ -->
     <section id="comptes" class="section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-        <div><h2 class="section-title">🏦 Liquidités — Comptes Courants</h2><p class="section-subtitle">Soldes mis à jour automatiquement à chaque opération de Budget</p></div>
+        <div><h2 class="section-title">🏦 Liquidités</h2><p class="section-subtitle">Comptes courants · Trésorerie · Historique des soldes</p></div>
         <button class="btn btn-gold" onclick="openAddCompte()">+ Nouveau compte</button>
       </div>
 
-      <div class="grid-3" style="margin-bottom:24px">
-        <div class="card card-sm"><div class="card-title">Solde Total</div><div class="card-value gold" id="cpt-total">0 €</div></div>
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Solde Total (comptes)</div><div class="card-value gold" id="cpt-total">0 €</div></div>
         <div class="card card-sm"><div class="card-title">Nombre de comptes</div><div class="card-value" id="cpt-count">0</div></div>
-        <div class="card card-sm"><div class="card-title">Solde le plus bas</div><div class="card-value" id="cpt-min">—</div></div>
+        <div class="card card-sm"><div class="card-title">Solde le plus bas (compte)</div><div class="card-value" id="cpt-min">—</div></div>
+      </div>
+
+      <!-- Trésorerie — §12 -->
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="card card-sm">
+          <div class="card-title">Liquidités Totales</div>
+          <div class="card-value blue" id="liq-total">—</div>
+          <div class="card-sub">Comptes + livrets (actifs liquides)</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Mois de Dépenses Couverts</div>
+          <div class="card-value" id="liq-mois-couverts">—</div>
+          <div class="card-sub" id="liq-mois-couverts-sub">—</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Solde Minimum Historique</div>
+          <div class="card-value" id="liq-min-histo">—</div>
+          <div class="card-sub" id="liq-min-histo-sub">—</div>
+        </div>
       </div>
 
       <div id="comptesList" class="grid-3"></div>
@@ -278,9 +322,25 @@
         <div id="doublonsList"></div>
       </div>
 
+      <!-- Historique des soldes — §11 -->
       <div class="card" style="margin-top:16px">
-        <div class="card-header"><span class="card-title">Historique de tous les comptes</span></div>
-        <div class="info-note">💡 Chaque opération de Budget (revenu ou dépense) peut être rattachée à un compte. Le solde affiché ici = Solde initial + Revenus − Dépenses de ce compte. Le total de tes Comptes Courants est désormais inclus dans le Patrimoine Net et la Diversification.</div>
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <span class="card-title">Historique des Soldes</span>
+          <div class="month-tabs" style="margin-bottom:0">
+            <div class="month-tab liq-periode-btn" data-periode="6m" onclick="selectLiquiditesPeriode('6m')">6 mois</div>
+            <div class="month-tab liq-periode-btn active" data-periode="1a" onclick="selectLiquiditesPeriode('1a')">1 an</div>
+            <div class="month-tab liq-periode-btn" data-periode="3a" onclick="selectLiquiditesPeriode('3a')">3 ans</div>
+            <div class="month-tab liq-periode-btn" data-periode="tout" onclick="selectLiquiditesPeriode('tout')">Tout</div>
+          </div>
+        </div>
+        <div id="liquiditesLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="liquiditesChartWrap" class="chart-wrap" style="height:240px"><canvas id="chartLiquidites"></canvas></div>
+        <div id="liquiditesChartEmpty" class="empty-state" style="display:none">
+          <div class="empty-state-icon">🏦</div>
+          <div class="empty-state-title">Pas encore d'historique</div>
+          <div class="empty-state-text">L'historique est reconstruit à partir des opérations de Budget rattachées à vos comptes.</div>
+        </div>
+        <div class="info-note" style="margin-top:8px">💡 Reconstruit exactement à partir de vos opérations (solde initial + revenus − dépenses de chaque compte, date par date) — pas une estimation.</div>
       </div>
     </section>
 
@@ -1005,6 +1065,7 @@
 <script src="js/nav.js"></script>
 <script src="js/budget.js"></script>
 <script src="js/comptes.js"></script>
+<script src="js/liquidites.js"></script>
 <script src="js/actifs.js"></script>
 <script src="js/passifs.js"></script>
 <script src="js/patrimoine.js"></script>
