@@ -57,6 +57,18 @@ function getAllocationClasses() {
   return {groups, total};
 }
 
+// Répartit un montant d'épargne entre "cash conservé" et "investi", sur la base des
+// versements mensuels déjà programmés sur les actifs liquides/semi-liquides (aMensuel).
+// Ne fabrique aucune donnée : purement dérivé des versements réellement configurés.
+function getCashInvestiSplit(soldeMontant) {
+  const investiConfigure = state.actifs
+    .filter(a=>a.category==='liquide'||a.category==='semiliquide')
+    .reduce((s,a)=>s+(a.mensuel||0),0);
+  const investi = Math.max(0, Math.min(soldeMontant, investiConfigure));
+  const cash = soldeMontant - investi;
+  return {cash, investi};
+}
+
 // ═══════════════════════════════════════
 //  HISTORIQUE DU PATRIMOINE (base réelle, §15)
 //  Un point = un instantané réel du jour, enregistré à chaque rendu.
