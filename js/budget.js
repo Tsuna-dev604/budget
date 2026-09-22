@@ -119,6 +119,11 @@ function renderBudgetTable() {
   const s = document.getElementById('bSolde');
   s.textContent = fmt(solde);
   s.className = 'card-value '+(solde>=0?'green':'red');
+  const tauxEl = document.getElementById('bTauxEpargne');
+  if (tauxEl) {
+    if (rev>0) { tauxEl.textContent = fmtPct(solde/rev*100,1); tauxEl.className = 'card-value '+(solde>=0?'green':'red'); }
+    else { tauxEl.textContent = '—'; tauxEl.className = 'card-value'; }
+  }
 
   const lbl = month==='all'?`Année ${year}`:`${MOIS[parseInt(month)]} ${year}`;
   document.getElementById('budgetMonthLabel').textContent = lbl;
@@ -140,6 +145,8 @@ function renderBudgetTable() {
     </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Aucune opération</td></tr>';
 
   renderCategRecap(year);
+  renderPrevisionWidget();
+  renderAnomaliesWidget();
   updateDepenseSelectionBar();
   syncCheckAllDepensesState();
 }
@@ -189,26 +196,169 @@ function updateDepenseSelectionBar() {
   if (countEl) countEl.textContent = items.length;
   if (totalEl) totalEl.textContent = fmt(total);
 }
-let recapView = 'year'; // 'year' | 'month'
+// Résout le "mois de référence" (AAAA-MM) à partir des filtres actuels de la page Budget :
+// le mois sélectionné s'il y en a un, sinon le dernier mois avec données de l'année
+// sélectionnée, sinon le mois calendaire en cours. Réutilisé par le récap, le budget
+// prévisionnel et la détection d'anomalies — une seule source de vérité (§28/§29).
+function getReferenceYearMonth() {
+  const year = document.getElementById('filterBudgetYear').value || String(currentYear());
+  if (currentBudgetMonth !== 'all') return `${year}-${currentBudgetMonth}`;
+  const now = new Date();
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  // Année en cours : le mois calendaire actuel (pas le "dernier mois avec données", qui
+  // inclurait les échéances de salaire récurrent auto-générées jusqu'à fin d'année).
+  if (year === String(now.getFullYear())) return currentYm;
+  // Année différente : dernier mois avec des dépenses réelles enregistrées cette année-là.
+  const monthsWithDep = [...new Set(state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(year)).map(b=>b.date.slice(0,7)))].sort();
+  return monthsWithDep.length ? monthsWithDep[monthsWithDep.length-1] : currentYm;
+}
+
+let recapView = 'mois'; // 'mois' | 'trimestre' | 'annee'
 function setRecapView(v) {
   recapView = v;
-  document.getElementById('recapToggleYear').classList.toggle('active', v==='year');
-  document.getElementById('recapToggleMonth').classList.toggle('active', v==='month');
+  ['Mois','Trimestre','Annee'].forEach(k=>{
+    const el = document.getElementById('recapToggle'+k);
+    if (el) el.classList.toggle('active', k.toLowerCase()===v);
+  });
   const year = document.getElementById('filterBudgetYear').value || String(currentYear());
   renderCategRecap(year);
 }
 function renderCategRecap(year) {
   const MOIS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   let items, periodLabel;
-  if (recapView === 'month' && currentBudgetMonth !== 'all') {
-    items = state.budget.filter(b=>b.date.startsWith(year) && b.date.slice(5,7)===currentBudgetMonth);
-    periodLabel = `${MOIS[parseInt(currentBudgetMonth)]} ${year}`;
-  } else {
+  if (recapView === 'annee') {
     items = state.budget.filter(b=>b.date.startsWith(year));
     periodLabel = year;
-    if (recapView === 'month') periodLabel = `Tous — ${year}`;
+  } else if (recapView === 'trimestre') {
+    const ref = getReferenceYearMonth();
+    const debut = addMonths(ref+'-01', -2).slice(0,7);
+    items = state.budget.filter(b=>b.date.slice(0,7)>=debut && b.date.slice(0,7)<=ref);
+    periodLabel = `${MOIS[parseInt(debut.slice(5,7))]} → ${MOIS[parseInt(ref.slice(5,7))]} ${ref.slice(0,4)}`;
+  } else {
+    const ref = getReferenceYearMonth();
+    items = state.budget.filter(b=>b.date.startsWith(ref));
+    periodLabel = `${MOIS[parseInt(ref.slice(5,7))]} ${ref.slice(0,4)}`;
   }
   document.getElementById('recapPeriodLabel').textContent = periodLabel;
   document.getElementById('categRecapDep').innerHTML = categBarListHtml(items, 'depense');
   document.getElementById('categRecapRev').innerHTML = categBarListHtml(items, 'revenu');
+}
+
+// ═══════════════════════════════════════
+//  BUDGET PRÉVISIONNEL VS RÉEL — §9
+// ═══════════════════════════════════════
+function updatePrevision(categ, value) {
+  if (!state.budgetPrevisionnel) state.budgetPrevisionnel = {};
+  const v = parseFloat(value)||0;
+  if (v>0) state.budgetPrevisionnel[categ] = v; else delete state.budgetPrevisionnel[categ];
+  renderPrevisionWidget();
+  scheduleCloudSave();
+}
+function renderPrevisionWidget() {
+  const tbody = document.getElementById('previsionTbody');
+  if (!tbody) return;
+  const ref = getReferenceYearMonth();
+  const MOIS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const lblEl = document.getElementById('previsionRefLabel');
+  if (lblEl) lblEl.textContent = `${MOIS[parseInt(ref.slice(5,7))]} ${ref.slice(0,4)}`;
+
+  const reelParCateg = {};
+  state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(ref)).forEach(b=>{
+    reelParCateg[b.categ||'Autre'] = (reelParCateg[b.categ||'Autre']||0)+b.montant;
+  });
+  const prevs = state.budgetPrevisionnel||{};
+  // Catégories avec un prévu OU un réel, triées par écart décroissant (les dérapages en premier)
+  const categs = [...new Set([...CATEG_DEPENSE, ...Object.keys(reelParCateg)])]
+    .filter(c=>prevs[c]>0 || reelParCateg[c]>0);
+
+  if (!categs.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Aucun budget prévisionnel défini pour l\'instant. Renseignez un montant prévu ci-dessous pour vos catégories habituelles.</td></tr>';
+  } else {
+    const rows = categs.map(c=>{
+      const prevu = prevs[c]||0;
+      const reel = reelParCateg[c]||0;
+      const ecart = reel - prevu;
+      const pct = prevu>0 ? Math.min(150, reel/prevu*100) : null;
+      return {c, prevu, reel, ecart, pct};
+    }).sort((a,b)=>b.ecart-a.ecart);
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td class="highlight"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${r.c}</td>
+        <td><input type="number" min="0" step="1" value="${r.prevu||''}" placeholder="0" style="width:110px;padding:6px 10px;font-size:12px" onchange="updatePrevision('${r.c}', this.value)"></td>
+        <td class="gold">${fmt(r.reel)}</td>
+        <td class="${r.ecart>0?'red':'green'}">${r.ecart>0?'+':''}${fmt(r.ecart)}</td>
+      </tr>`).join('');
+  }
+
+  // Liste déroulante pour ajouter une catégorie non encore budgétée
+  const addSel = document.getElementById('previsionAddCateg');
+  if (addSel) {
+    const dispo = CATEG_DEPENSE.filter(c=>!(prevs[c]>0));
+    addSel.innerHTML = '<option value="">+ Définir un budget pour une catégorie…</option>' + dispo.map(c=>`<option value="${c}">${c}</option>`).join('');
+  }
+}
+function addPrevisionCateg() {
+  const sel = document.getElementById('previsionAddCateg');
+  const categ = sel.value;
+  if (!categ) return;
+  const montant = prompt(`Budget mensuel prévu pour "${categ}" (€) :`);
+  if (montant===null) return;
+  updatePrevision(categ, montant);
+  sel.value = '';
+}
+
+// ═══════════════════════════════════════
+//  ANOMALIES DE DÉPENSES — §10 (règles simples et explicables, pas d'IA)
+// ═══════════════════════════════════════
+function detectAnomalies() {
+  const ref = getReferenceYearMonth();
+  const HIST_MOIS = 6;
+  const anomalies = [];
+
+  // 1. Catégorie dont la dépense du mois dépasse nettement sa moyenne récente
+  const refItems = state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(ref));
+  const parCateg = {};
+  refItems.forEach(b=>{ const c=b.categ||'Autre'; parCateg[c]=(parCateg[c]||0)+b.montant; });
+
+  Object.entries(parCateg).forEach(([categ, montant])=>{
+    let total=0, count=0;
+    for (let i=1;i<=HIST_MOIS;i++){
+      const ym = addMonths(ref+'-01', -i).slice(0,7);
+      const m = state.budget.filter(b=>b.type==='depense'&&(b.categ||'Autre')===categ&&b.date.startsWith(ym)).reduce((s,b)=>s+b.montant,0);
+      if (m>0){ total+=m; count++; }
+    }
+    if (count>=2) {
+      const moyenne = total/count;
+      if (moyenne>0 && montant > moyenne*1.3) {
+        const pct = (montant/moyenne-1)*100;
+        anomalies.push({sev:pct, icon:'⚠', text:`Dépenses « ${categ} » supérieures de ${fmtPct(pct,0)} à la moyenne des ${count} derniers mois actifs (moyenne : ${fmt(moyenne)}).`});
+      }
+    }
+  });
+
+  // 2. Transaction isolée nettement supérieure à l'habitude de sa catégorie
+  refItems.forEach(b=>{
+    const categ = b.categ||'Autre';
+    const hist = [];
+    for (let i=1;i<=HIST_MOIS;i++){
+      const ym = addMonths(ref+'-01', -i).slice(0,7);
+      state.budget.filter(x=>x.type==='depense'&&(x.categ||'Autre')===categ&&x.date.startsWith(ym)).forEach(x=>hist.push(x.montant));
+    }
+    if (hist.length>=3) {
+      const moy = hist.reduce((a,v)=>a+v,0)/hist.length;
+      if (moy>0 && b.montant > moy*2.5 && b.montant>=100) {
+        anomalies.push({sev:(b.montant/moy)*150, icon:'🔴', text:`Dépense inhabituelle détectée : ${fmt(b.montant)} pour « ${b.label} » (${categ}, ${b.date}) — nettement au-dessus de vos dépenses habituelles dans cette catégorie (moyenne : ${fmt(moy)}).`});
+      }
+    }
+  });
+
+  return anomalies.sort((a,b)=>b.sev-a.sev).slice(0,5);
+}
+function renderAnomaliesWidget() {
+  const el = document.getElementById('anomaliesList');
+  if (!el) return;
+  const anomalies = detectAnomalies();
+  el.innerHTML = anomalies.length
+    ? anomalies.map(a=>`<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="flex-shrink:0">${a.icon}</span><span style="color:var(--text2);font-size:13px;line-height:1.6">${a.text}</span></div>`).join('')
+    : '<div style="color:var(--text3);font-size:13px">Aucune anomalie détectée sur le mois de référence, comparé aux 6 derniers mois.</div>';
 }
