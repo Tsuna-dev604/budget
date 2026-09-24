@@ -23,13 +23,9 @@ function toggleTheme() {
   try { localStorage.setItem('theme', next); } catch {}
   updateThemeToggleUI(next);
   // Les graphiques Chart.js sont recréés à chaque rendu : on redessine
-  // simplement la section active pour qu'ils reprennent les bonnes couleurs.
+  // simplement pour qu'ils reprennent les bonnes couleurs.
   if (document.body.classList.contains('authed') && typeof renderAll === 'function') {
     renderAll();
-    const active = document.querySelector('.section.active');
-    if (active && active.id === 'diversification' && typeof renderDiversification === 'function') {
-      renderDiversification();
-    }
   }
 }
 

@@ -134,10 +134,7 @@ function chargesAnnuelles(bienId) { return chargesMensuelles(bienId)*12; }
 //  IMMOBILIER — RENDER
 // ═══════════════════════════════════════
 function showImmoTab(id, el) {
-  document.querySelectorAll('.sub-section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  el.classList.add('active');
+  showSubTab('immobilier', id, el);
 }
 
 function getFiscalLabel(f) {

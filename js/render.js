@@ -8,6 +8,9 @@ function renderAllInner() {
   renderLiquidites();
   renderActifs();
   renderPassifs();
+  renderPatrimoineAllocation();
+  renderPatrimoineVariation();
+  renderPatrimoineHistorique();
   renderSynthese();
   renderImmobilier();
   renderSalaireBadge();

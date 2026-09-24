@@ -8,7 +8,6 @@ const SECTION_TITLES = {
   actifs: 'Patrimoine',
   immobilier: 'Immobilier',
   simu_pea: 'Investissements',
-  diversification: 'Diversification',
   simulations: 'Simulations',
   objectifs: 'Objectifs',
   parametres: 'Paramètres'
@@ -29,13 +28,24 @@ function showSection(id, tab) {
 
   try {
     if (typeof renderAll === 'function') renderAll();
-    // La diversification a ses propres graphiques Chart.js, coûteux :
-    // on ne les recalcule que quand on ouvre réellement cette page.
-    if (id === 'diversification' && typeof renderDiversification === 'function') renderDiversification();
   } catch (e) {
     console.error('Erreur lors du rendu de la section', id, e);
     notify('Impossible d\'actualiser certaines données. Vérifiez votre connexion puis réessayez.', true);
   }
+}
+
+// ── Sous-onglets internes à une page (Immobilier, Patrimoine…) ──
+// Scopé à la section parente pour éviter qu'un sous-onglet actif dans une page
+// n'efface l'état des sous-onglets d'une autre page (elles ne se réaffectent
+// pas globalement, contrairement à un simple querySelectorAll('.sub-tab')).
+function showSubTab(sectionId, tabId, el) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  section.querySelectorAll('.sub-section').forEach(s=>s.classList.remove('active'));
+  section.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  const target = document.getElementById(tabId);
+  if (target) target.classList.add('active');
+  if (el) el.classList.add('active');
 }
 
 // ── Sidebar rétractable (desktop) ──

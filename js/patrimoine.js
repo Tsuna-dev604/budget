@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════
 //  Calculs de patrimoine — fonctions centralisées, réutilisées par
-//  synthese.js, diversification.js et (plus tard) patrimoine/simulations.
+//  synthese.js, patrimoine-detail.js et (plus tard) simulations.js.
 // ═══════════════════════════════════════
 function getTotalComptes() {
   return state.comptes.reduce((s,c)=>s+getSoldeCompte(c.id),0);
@@ -69,24 +69,66 @@ function getCashInvestiSplit(soldeMontant) {
   return {cash, investi};
 }
 
+// Répartition factuelle par enveloppe fiscale (en %, sans score arbitraire) — §14
+function getAllocationFiscale() {
+  const totalComptesFisc = getTotalComptes();
+  const map = {exonere:0, ps:0, flat:0, immobilier:0};
+  map.exonere += totalComptesFisc; // comptes courants : pas de fiscalité de détention
+  state.actifs.forEach(a=>{
+    const v = a.valeur||0;
+    if (a.category==='physique') return; // fiscalité plus-value au cas par cas, non modélisée ici
+    if (a.category==='immobilier') { map.immobilier += v; return; }
+    if (a.fiscal==='ps') map.ps += v;
+    else if (a.fiscal==='flat') map.flat += v;
+    else map.exonere += v;
+  });
+  const total = Object.values(map).reduce((a,v)=>a+v,0);
+  return {map, total};
+}
+
+// Signale les concentrations importantes avec une formulation neutre, factuelle — §14.
+// Pas de score, pas de jugement de valeur : un simple constat chiffré.
+function getConcentrationNotes() {
+  const {groups, total} = getAllocationClasses();
+  if (!total) return [];
+  const CAT_LABELS = {liquide:'Les liquidités représentent',semiliquide:'Les actifs financiers (PEA, CTO, assurance-vie…) représentent',immobilier:'L\'immobilier représente',physique:'Les biens physiques représentent'};
+  const notes = [];
+  Object.entries(groups).forEach(([k,v])=>{
+    const pct = v/total*100;
+    if (pct >= 60) notes.push(`${CAT_LABELS[k]} ${fmtPct(pct,0)} du patrimoine total.`);
+  });
+  return notes;
+}
+
 // ═══════════════════════════════════════
 //  HISTORIQUE DU PATRIMOINE (base réelle, §15)
 //  Un point = un instantané réel du jour, enregistré à chaque rendu.
 //  On ne reconstruit jamais de données passées fictives : l'historique
-//  se construit uniquement à partir d'aujourd'hui.
+//  se construit uniquement à partir d'aujourd'hui. Chaque point conserve
+//  aussi les sous-totaux par classe d'actif, utilisés par la décomposition
+//  de la variation du patrimoine (§6).
 // ═══════════════════════════════════════
 function recordPatrimoineSnapshot() {
   if (!state.patrimoineHistory) state.patrimoineHistory = [];
   const date = today();
-  const actifs = getTotalActifs() + getTotalComptes();
+  const comptes = getTotalComptes();
+  const {groups} = getAllocationClasses(); // {liquide (hors comptes), semiliquide, immobilier, physique}
+  const actifs = getTotalActifs() + comptes;
   const passifs = getTotalPassifs();
   const net = actifs - passifs;
+  const point = {
+    date, actifs, passifs, net,
+    liquide: groups.liquide, // inclut déjà les comptes (getAllocationClasses les additionne)
+    semiliquide: groups.semiliquide,
+    immobilier: groups.immobilier,
+    physique: groups.physique,
+  };
   const existing = state.patrimoineHistory.find(p=>p.date===date);
   if (existing) {
     // Un seul point par jour : on met à jour la valeur du jour (dernier état connu)
-    existing.actifs = actifs; existing.passifs = passifs; existing.net = net;
+    Object.assign(existing, point);
   } else {
-    state.patrimoineHistory.push({date, actifs, passifs, net});
+    state.patrimoineHistory.push(point);
     state.patrimoineHistory.sort((a,b)=>a.date.localeCompare(b.date));
   }
 }
@@ -97,6 +139,16 @@ function getPatrimoineNetAt(dateStr) {
   const candidats = state.patrimoineHistory.filter(p=>p.date<=dateStr);
   if (!candidats.length) return null;
   return candidats[candidats.length-1].net;
+}
+// Sous-total (liquide/semiliquide/immobilier/physique/actifs/passifs) à une date donnée ou avant.
+// Retourne null si aucun point disponible, ou si le point trouvé ne contient pas encore ce champ
+// (anciens instantanés enregistrés avant l'ajout des sous-totaux) — on n'invente jamais de valeur.
+function getSubtotalAt(field, dateStr) {
+  if (!state.patrimoineHistory || !state.patrimoineHistory.length) return null;
+  const candidats = state.patrimoineHistory.filter(p=>p.date<=dateStr);
+  if (!candidats.length) return null;
+  const point = candidats[candidats.length-1];
+  return (point[field]===undefined) ? null : point[field];
 }
 function addMonths(dateStr, n) {
   const d = new Date(dateStr+'T00:00:00');
@@ -114,4 +166,49 @@ function getVariationPatrimoine(nbMois) {
   const netRef = getPatrimoineNetAt(dateRef);
   if (netRef===null) return null;
   return {delta: netActuel-netRef, pct: netRef!==0 ? (netActuel-netRef)/Math.abs(netRef)*100 : null};
+}
+
+// ═══════════════════════════════════════
+//  DÉCOMPOSITION DE LA VARIATION DU PATRIMOINE (§6)
+//  Explique la variation du mois en cours à partir de données réelles :
+//  épargne (budget), remboursement de capital (passifs), variation immobilière
+//  et performance des investissements (sous-totaux d'historique). Le résidu
+//  ("autres variations") absorbe ce qui n'est pas décomposable avec certitude —
+//  jamais de valeur inventée pour "faire tomber juste".
+// ═══════════════════════════════════════
+function getDecompositionMoisCourant() {
+  const now = new Date();
+  const debutMois = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const dateRef = addMonths(debutMois, -1); // dernier instantané connu avant le 1er du mois
+  const netDebut = getPatrimoineNetAt(dateRef);
+  const finDebutFinancier = getSubtotalAt('semiliquide', dateRef);
+  const finDebutImmo = getSubtotalAt('immobilier', dateRef);
+  const finDebutPassifs = (function(){
+    if (!state.patrimoineHistory) return null;
+    const c = state.patrimoineHistory.filter(p=>p.date<=dateRef);
+    return c.length ? c[c.length-1].passifs : null;
+  })();
+
+  if (netDebut===null || finDebutFinancier===null || finDebutImmo===null || finDebutPassifs===null) {
+    return null; // historique pas encore assez profond/détaillé pour ce mois — on ne fabrique rien
+  }
+
+  const netFin = getPatrimoineNet();
+  const financierFin = state.actifs.filter(a=>a.category==='semiliquide').reduce((s,a)=>s+(a.valeur||0),0);
+  const immoFin = state.actifs.filter(a=>a.category==='immobilier').reduce((s,a)=>s+(a.valeur||0),0);
+  const passifsFin = getTotalPassifs();
+
+  const variationTotale = netFin - netDebut;
+  const epargne = getEpargneMoisCourant().solde;
+  const remboursementCredit = finDebutPassifs - passifsFin; // dette qui diminue = capital remboursé
+  const variationImmobiliere = immoFin - finDebutImmo;
+
+  // Performance investissements = variation des actifs financiers − versements mensuels programmés
+  // sur ces mêmes actifs (déjà comptés dans l'épargne). Estimation, clairement présentée comme telle.
+  const versementsProgrammes = state.actifs.filter(a=>a.category==='semiliquide').reduce((s,a)=>s+(a.mensuel||0),0);
+  const performanceInvest = (financierFin - finDebutFinancier) - versementsProgrammes;
+
+  const autres = variationTotale - epargne - remboursementCredit - variationImmobiliere - performanceInvest;
+
+  return {debutMois, netDebut, netFin, variationTotale, epargne, performanceInvest, remboursementCredit, variationImmobiliere, autres};
 }
