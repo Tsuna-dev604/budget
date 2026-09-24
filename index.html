@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Patrimoine & Immobilier</title>
+<!-- Anti-flash thème : pose data-theme / sidebar-collapsed avant le premier paint -->
+<script>
+(function(){
+  try {
+    var theme = localStorage.getItem('theme');
+    if (!theme) theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    if (localStorage.getItem('sidebarCollapsed') === '1') document.documentElement.classList.add('sidebar-collapsed');
+  } catch(e) {}
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══════ ÉCRAN DE CONNEXION ═══════ -->
+<div id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">Gestion Budget</div>
+    <div class="auth-sub">Accès privé — Supabase</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Connexion</div>
+      <div class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Créer un compte</div>
+    </div>
+    <div id="authFormWrap">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="vous@exemple.com">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitAuth()">
+      </div>
+      <button class="btn btn-gold" style="width:100%" id="authSubmitBtn" onclick="submitAuth()">Se connecter</button>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+    <div class="auth-loading" id="authLoading" style="display:none">Chargement de vos données…</div>
+  </div>
+</div>
+
+<!-- ═══════ APPLICATION ═══════ -->
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <span class="logo-mark">◆</span>
+        <span class="logo-text">
+          <span class="logo-name">Patrimoine</span>
+          <span class="logo-sub">Gestion Budget</span>
+        </span>
+      </div>
+      <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Réduire / étendre la navigation" aria-label="Réduire la navigation">⟨</button>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-item active" title="Synthèse" onclick="showSection('synthese',this)"><span class="nav-icon">⬡</span><span class="nav-label">Synthèse</span></div>
+      <div class="nav-item" title="Budget" onclick="showSection('budget',this)"><span class="nav-icon">⇄</span><span class="nav-label">Budget</span></div>
+      <div class="nav-item" title="Liquidités" onclick="showSection('comptes',this)"><span class="nav-icon">🏦</span><span class="nav-label">Liquidités</span></div>
+      <div class="nav-item" title="Patrimoine" onclick="showSection('actifs',this)"><span class="nav-icon">◈</span><span class="nav-label">Patrimoine</span></div>
+      <div class="nav-item" title="Immobilier" onclick="showSection('immobilier',this)"><span class="nav-icon">🏠</span><span class="nav-label">Immobilier</span></div>
+      <div class="nav-item" title="Investissements" onclick="showSection('simu_pea',this)"><span class="nav-icon">◎</span><span class="nav-label">Investissements</span></div>
+      <div class="nav-item" title="Simulations" onclick="showSection('simulations',this)"><span class="nav-icon">🧮</span><span class="nav-label">Simulations</span></div>
+      <div class="nav-item" title="Objectifs" onclick="showSection('objectifs',this)"><span class="nav-icon">🎯</span><span class="nav-label">Objectifs</span></div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" title="Paramètres" onclick="showSection('parametres',this)"><span class="nav-icon">⚙</span><span class="nav-label">Paramètres</span></div>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Changer de thème">
+        <span id="themeIcon">🌙</span><span class="nav-label" id="themeLabel">Mode sombre</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
+
+  <div class="main-area">
+    <div class="mobile-topbar">
+      <button class="mobile-menu-btn" onclick="openSidebarMobile()" aria-label="Ouvrir le menu">☰</button>
+      <span class="mobile-title" id="mobileTitle">Synthèse</span>
+      <span class="user-badge" id="userBadge"></span>
+    </div>
+
+    <main id="mainContent">
+
+    <!-- ═══════ SYNTHÈSE ═══════ -->
+    <section id="synthese" class="section active">
+      <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
+      <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
+
+      <!-- Ligne 1 : 5 KPI essentiels -->
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="card card-sm">
+          <div class="card-title">Patrimoine Net</div>
+          <div class="card-value gold" id="kpi-net">—</div>
+          <div class="card-sub" id="kpi-net-sub">—</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Variation 12 mois</div>
+          <div class="card-value" id="kpi-var12">—</div>
+          <div class="card-sub" id="kpi-var12-sub">—</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Capacité d'Épargne</div>
+          <div class="card-value green" id="kpi-epargne">—</div>
+          <div class="card-sub">Ce mois-ci</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Liquidités Disponibles</div>
+          <div class="card-value blue" id="kpi-liquid2">—</div>
+          <div class="card-sub">Livrets, cash, comptes</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Dettes Restantes</div>
+          <div class="card-value red" id="kpi-dette">—</div>
+          <div class="card-sub">Capital restant dû</div>
+        </div>
+      </div>
+
+      <!-- Ligne 2 : évolution du patrimoine -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <span class="card-title">Évolution du Patrimoine</span>
+          <div class="month-tabs" style="margin-bottom:0" id="periodeButtons">
+            <div class="month-tab periode-btn active" data-periode="1m" onclick="selectPeriode('1m')">1 mois</div>
+            <div class="month-tab periode-btn" data-periode="3m" onclick="selectPeriode('3m')">3 mois</div>
+            <div class="month-tab periode-btn" data-periode="6m" onclick="selectPeriode('6m')">6 mois</div>
+            <div class="month-tab periode-btn" data-periode="1a" onclick="selectPeriode('1a')">1 an</div>
+            <div class="month-tab periode-btn" data-periode="3a" onclick="selectPeriode('3a')">3 ans</div>
+            <div class="month-tab periode-btn" data-periode="5a" onclick="selectPeriode('5a')">5 ans</div>
+            <div class="month-tab periode-btn" data-periode="tout" onclick="selectPeriode('tout')">Tout</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--font-mono);font-size:11px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('net')"> <span style="color:var(--gold)">● Patrimoine net</span></label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('actifs')"> <span style="color:var(--green)">● Total actifs</span></label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0"><input type="checkbox" checked style="width:auto" onchange="toggleSerie('passifs')"> <span style="color:var(--red)">● Total dettes</span></label>
+        </div>
+        <div id="patrimoineChartWrap" class="chart-wrap" style="height:260px"><canvas id="chartPatrimoineEvol"></canvas></div>
+        <div id="patrimoineChartEmpty" class="empty-state" style="display:none">
+          <div class="empty-state-icon">📈</div>
+          <div class="empty-state-title">L'historique se construit</div>
+          <div class="empty-state-text">Chaque utilisation de l'application enregistre un instantané réel de votre patrimoine. Revenez dans quelques jours pour voir apparaître une courbe de tendance.</div>
+        </div>
+      </div>
+
+      <!-- Ligne 3 : où va / où est mon argent -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px">
+            <span class="card-title">Où va mon argent ?</span>
+            <div class="month-tabs" style="margin-bottom:0">
+              <div class="month-tab dep-periode-btn active" data-dep-periode="mois" onclick="selectDepPeriode('mois')">Mois</div>
+              <div class="month-tab dep-periode-btn" data-dep-periode="trimestre" onclick="selectDepPeriode('trimestre')">Trimestre</div>
+              <div class="month-tab dep-periode-btn" data-dep-periode="annee" onclick="selectDepPeriode('annee')">Année</div>
+            </div>
+          </div>
+          <div id="depensesWidgetList"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Où est mon argent ?</span></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="chartAlloc"></canvas></div>
+          <div id="allocList" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Ligne 4 : flux du mois -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Flux du mois</span></div>
+        <div id="fluxMoisWrap"></div>
+      </div>
+
+      <!-- Ligne 5 : points à surveiller -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Points à surveiller</span></div>
+        <div id="pointsSurveillerList"></div>
+      </div>
+    </section>
+
+    <!-- ═══════ BUDGET ═══════ -->
+    <section id="budget" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">Gestion du Budget</h2><p class="section-subtitle">Suivi mensuel · Récap annuel · Analyse par catégorie</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div id="salaryBadgeWrap"></div>
+          <button class="btn" onclick="openSalaireModal()">⚙ Salaire récurrent</button>
+          <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Taux d'Épargne</div><div class="card-value" id="bTauxEpargne">—</div></div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <select id="filterBudgetType" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()">
+          <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option>
+        </select>
+        <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
+        </select>
+      </div>
+
+      <div class="month-tabs" id="monthTabs"></div>
+
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><span class="card-title">Opérations</span><span id="budgetMonthLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span></div>
+        <div id="depenseSelectionBar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--bg4);border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
+          <span style="color:var(--text2)">☑ <span id="depenseSelectionCount">0</span> dépense(s) cochée(s) — Total : <span id="depenseSelectionTotal" style="color:var(--red);font-weight:600">0 €</span></span>
+          <button class="icon-btn" onclick="clearDepenseSelection()" title="Tout décocher">✕ Tout décocher</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:34px"><input type="checkbox" id="checkAllDepenses" onchange="toggleAllVisibleDepenses(this.checked)" title="Cocher/décocher toutes les dépenses visibles"></th><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Compte</th><th>Type</th><th>Montant</th><th></th></tr></thead>
+            <tbody id="budgetTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">Dépenses &amp; Revenus par Catégorie</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="recapPeriodLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
+            <div style="display:flex;border:1px solid var(--border2);border-radius:20px;overflow:hidden">
+              <div id="recapToggleMois" class="recap-toggle active" onclick="setRecapView('mois')">Mois</div>
+              <div id="recapToggleTrimestre" class="recap-toggle" onclick="setRecapView('trimestre')">Trimestre</div>
+              <div id="recapToggleAnnee" class="recap-toggle" onclick="setRecapView('annee')">Année</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:12px">Dépenses</div>
+            <div id="categRecapDep"></div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px">Revenus</div>
+            <div id="categRecapRev"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Budget Prévisionnel vs Réel</span>
+            <span id="previsionRefLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Catégorie</th><th>Prévu / mois</th><th>Réel</th><th>Écart</th></tr></thead>
+              <tbody id="previsionTbody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px">
+            <select id="previsionAddCateg" onchange="addPrevisionCateg()" style="max-width:320px"></select>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Anomalies de Dépenses</span></div>
+          <p style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:14px">Comparaison simple avec la moyenne des 6 derniers mois — aucune donnée n'est envoyée à un service externe.</p>
+          <div id="anomaliesList"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════ COMPTES COURANTS / LIQUIDITÉS ═══════ -->
+    <section id="comptes" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">🏦 Liquidités</h2><p class="section-subtitle">Comptes courants · Trésorerie · Historique des soldes</p></div>
+        <button class="btn btn-gold" onclick="openAddCompte()">+ Nouveau compte</button>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Solde Total (comptes)</div><div class="card-value gold" id="cpt-total">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Nombre de comptes</div><div class="card-value" id="cpt-count">0</div></div>
+        <div class="card card-sm"><div class="card-title">Solde le plus bas (compte)</div><div class="card-value" id="cpt-min">—</div></div>
+      </div>
+
+      <!-- Trésorerie — §12 -->
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="card card-sm">
+          <div class="card-title">Liquidités Totales</div>
+          <div class="card-value blue" id="liq-total">—</div>
+          <div class="card-sub">Comptes + livrets (actifs liquides)</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Mois de Dépenses Couverts</div>
+          <div class="card-value" id="liq-mois-couverts">—</div>
+          <div class="card-sub" id="liq-mois-couverts-sub">—</div>
+        </div>
+        <div class="card card-sm">
+          <div class="card-title">Solde Minimum Historique</div>
+          <div class="card-value" id="liq-min-histo">—</div>
+          <div class="card-sub" id="liq-min-histo-sub">—</div>
+        </div>
+      </div>
+
+      <div id="comptesList" class="grid-3"></div>
+
+      <div id="doublonsCard" class="card" style="margin-top:16px;display:none">
+        <div class="card-header"><span class="card-title">⚠ Doublons potentiels détectés</span></div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">
+          Ces actifs de la catégorie "💧 Liquide" (onglet Patrimoine) pourraient déjà représenter le solde d'un de vos comptes courants.
+          Pour éviter de compter cet argent deux fois dans le Patrimoine Net, convertis-les en Compte Courant (le solde devient le solde initial du compte) ou supprime le doublon.
+        </p>
+        <div id="doublonsList"></div>
+      </div>
+
+      <!-- Historique des soldes — §11 -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <span class="card-title">Historique des Soldes</span>
+          <div class="month-tabs" style="margin-bottom:0">
+            <div class="month-tab liq-periode-btn" data-periode="6m" onclick="selectLiquiditesPeriode('6m')">6 mois</div>
+            <div class="month-tab liq-periode-btn active" data-periode="1a" onclick="selectLiquiditesPeriode('1a')">1 an</div>
+            <div class="month-tab liq-periode-btn" data-periode="3a" onclick="selectLiquiditesPeriode('3a')">3 ans</div>
+            <div class="month-tab liq-periode-btn" data-periode="tout" onclick="selectLiquiditesPeriode('tout')">Tout</div>
+          </div>
+        </div>
+        <div id="liquiditesLegend" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="liquiditesChartWrap" class="chart-wrap" style="height:240px"><canvas id="chartLiquidites"></canvas></div>
+        <div id="liquiditesChartEmpty" class="empty-state" style="display:none">
+          <div class="empty-state-icon">🏦</div>
+          <div class="empty-state-title">Pas encore d'historique</div>
+          <div class="empty-state-text">L'historique est reconstruit à partir des opérations de Budget rattachées à vos comptes.</div>
+        </div>
+        <div class="info-note" style="margin-top:8px">💡 Reconstruit exactement à partir de vos opérations (solde initial + revenus − dépenses de chaque compte, date par date) — pas une estimation.</div>
+      </div>
+    </section>
+
+    <!-- ═══════ ACTIFS & PASSIFS (Patrimoine) ═══════ -->
+    <section id="actifs" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">Patrimoine — Actifs &amp; Passifs</h2><p class="section-subtitle">Inventaire patrimonial complet</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" onclick="openAddPassif()">+ Passif</button>
+          <button class="btn btn-gold" onclick="openAddActif()">+ Actif</button>
+        </div>
+      </div>
+
+      <div class="grid-5" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Total Actifs</div><div class="card-value gold" id="totalActifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Comptes Courants</div><div class="card-value blue" id="totalComptesActifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Total Dettes</div><div class="card-value red" id="totalPassifs">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Patrimoine Net</div><div class="card-value" id="totalNet2">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Loyers / mois</div><div class="card-value" id="totalLoyers2">0 €</div></div>
+      </div>
+
+      <div class="sub-tabs">
+        <div class="sub-tab active" onclick="showPatrimoineTab('patr-vue',this)">▦ Vue d'ensemble</div>
+        <div class="sub-tab" onclick="showPatrimoineTab('patr-alloc',this)">◐ Allocation</div>
+        <div class="sub-tab" onclick="showPatrimoineTab('patr-variation',this)">↕ Variation du patrimoine</div>
+        <div class="sub-tab" onclick="showPatrimoineTab('patr-histo',this)">▤ Historique</div>
+      </div>
+
+      <!-- ── Vue d'ensemble : actifs & passifs ── -->
+      <div class="sub-section active" id="patr-vue">
+        <div class="info-note" style="margin-bottom:16px">★ Projections +1/5/10 ans incluent les versements mensuels (formule des annuités). ✏ Cliquez sur ✎ pour modifier une ligne.</div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">💧 Actifs Liquides — Livrets &amp; Cash</span>
+            <span class="badge badge-green">Disponible immédiatement</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+              <tbody id="actifLiqTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">🔒 Actifs Semi-liquides — PEL, AV, PEA, Crypto</span>
+            <span class="badge badge-gold">Rachat sous conditions</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Libellé</th><th>Valeur</th><th>+/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Taux Net</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+              <tbody id="actifSemiTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">🏠 Actifs Immobiliers</span>
+            <span class="badge badge-blue">Illiquide</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Libellé</th><th>Valeur</th><th>Loyer/mois</th><th>Taux Brut</th><th>Fiscal</th><th>Rendement Loc.</th><th>+1 an</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+              <tbody id="actifImmTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">💎 Biens Physiques — Montres, Art, Voitures, Objets</span>
+            <span class="badge badge-purple">Actifs de collection</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Libellé</th><th>Sous-type</th><th>Valeur d'achat</th><th>Valeur actuelle</th><th>+/−</th><th>Évol. annuelle est.</th><th>+5 ans</th><th>+10 ans</th><th></th></tr></thead>
+              <tbody id="actifPhysTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px">📋 Passifs — Dettes &amp; Crédits</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Libellé</th><th>Capital Restant Dû</th><th>Mensualité</th><th>Taux</th><th>Échéance</th><th></th></tr></thead>
+              <tbody id="passifTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Allocation : répartition factuelle, sans score arbitraire (§14) ── -->
+      <div class="sub-section" id="patr-alloc">
+        <div id="patrConcentrationNotes" style="margin-bottom:16px"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Répartition par classe d'actif</span></div>
+            <div class="chart-wrap" style="height:220px"><canvas id="chartPatrClasses"></canvas></div>
+            <div id="patrClassesList" style="margin-top:12px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Répartition par enveloppe fiscale</span></div>
+            <div class="chart-wrap" style="height:220px"><canvas id="chartPatrFiscal"></canvas></div>
+            <div id="patrFiscalList" style="margin-top:12px"></div>
+            <div class="info-note" style="margin-top:12px">PEA : PS 17,2 % après 5 ans · CTO/AV : Flat Tax 30 % · Livrets &amp; comptes : exonérés.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Variation du patrimoine : décomposition du mois en cours (§6) ── -->
+      <div class="sub-section" id="patr-variation">
+        <div id="patrVariationWrap"></div>
+      </div>
+
+      <!-- ── Historique : base réelle des instantanés du patrimoine (§15) ── -->
+      <div class="sub-section" id="patr-histo">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Instantanés enregistrés</span></div>
+          <div id="patrHistoWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ IMMOBILIER ═══════ -->
+    <section id="immobilier" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div><h2 class="section-title">🏠 Gestion Immobilière</h2><p class="section-subtitle">Rendement · Charges · Locataires · ROI</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" onclick="openLocataireModal()">+ Locataire</button>
+          <button class="btn" onclick="openChargeModal()">+ Charge</button>
+          <button class="btn btn-gold" onclick="openImmoActifModal()">+ Bien immobilier</button>
+        </div>
+      </div>
+
+      <div class="grid-5" style="margin-bottom:20px" id="immoKpiGrid">
+        <div class="card card-sm"><div class="card-title">Loyers Bruts/mois</div><div class="card-value gold" id="ikpi-loyers">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Charges Totales/mois</div><div class="card-value red" id="ikpi-charges">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Net avant impôts/mois</div><div class="card-value green" id="ikpi-net">0 €</div><div class="card-sub">Hors fiscalité IR</div></div>
+        <div class="card card-sm"><div class="card-title">Net après impôts/mois</div><div class="card-value" id="ikpi-net-apres">0 €</div><div class="card-sub">PS + IR estimés</div></div>
+        <div class="card card-sm"><div class="card-title">Valeur Patrimoine</div><div class="card-value gold" id="ikpi-valeur">0 €</div></div>
+      </div>
+
+      <div class="sub-tabs">
+        <div class="sub-tab active" onclick="showImmoTab('bien-list',this)">▦ Mes Biens</div>
+        <div class="sub-tab" onclick="showImmoTab('locataires',this)">👤 Locataires</div>
+        <div class="sub-tab" onclick="showImmoTab('charges-tab',this)">💰 Charges &amp; Taxes</div>
+        <div class="sub-tab" onclick="showImmoTab('rendement',this)">📊 Rendement &amp; ROI</div>
+      </div>
+
+      <div class="sub-section active" id="bien-list">
+        <div id="immoBiensList">
+          <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun bien immobilier. Ajoutez-en un ci-dessus ou ils apparaîtront ici depuis vos actifs.</div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="locataires">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Historique Locataires</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bien</th><th>Nom</th><th>Entrée</th><th>Sortie</th><th>Loyer CC</th><th>Caution</th><th>Statut</th><th></th></tr></thead>
+              <tbody id="locatairesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="charges-tab">
+        <div class="info-note" style="margin-bottom:16px">Les charges annuelles sont réparties mensuellement pour calculer le rendement net. Taxe foncière, assurances, eau, électricité, entretien…</div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Toutes les Charges par Bien</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bien</th><th>Type de charge</th><th>Montant</th><th>Fréquence</th><th>Mois/an</th><th>Date</th><th></th></tr></thead>
+              <tbody id="chargesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-section" id="rendement">
+        <div id="rendementList">
+          <div style="text-align:center;padding:40px;color:var(--text3)">Ajoutez des biens pour voir les calculs de rendement.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ PEA (Investissements) ═══════ -->
+    <section id="simu_pea" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div><h2 class="section-title">Investissements — PEA &amp; CTO</h2><p class="section-subtitle">Enveloppes fiscales · Frais réels · Cours en temps réel (API)</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" onclick="openApiSettingsModal()">⚙ Cours API</button>
+          <button class="btn btn-blue" onclick="refreshAllPeaCours()">🔄 Actualiser tous les cours</button>
+          <button class="btn" onclick="openAddPeaCompte()">+ Ajouter un compte</button>
+          <button class="btn btn-gold" onclick="openAddPeaTitre()">+ Ajouter une ligne</button>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:16px">
+        <div class="card card-sm"><div class="card-title">Total Investi</div><div class="card-value gold" id="pkpi-investi">0 €</div><div class="card-sub">Achat + frais (courtage, change, TTF)</div></div>
+        <div class="card card-sm"><div class="card-title">Valeur Actuelle</div><div class="card-value blue" id="pkpi-valeur">0 €</div><div class="card-sub">Aux derniers cours connus</div></div>
+        <div class="card card-sm"><div class="card-title">Plus/Moins-value</div><div class="card-value" id="pkpi-pv">0 €</div><div class="card-sub">Latente, brute de fiscalité</div></div>
+        <div class="card card-sm"><div class="card-title">Performance</div><div class="card-value" id="pkpi-perf">0 %</div><div class="card-sub">Sur capital investi</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition du Portefeuille</span></div>
+          <div class="chart-wrap" style="height:220px"><canvas id="chartPeaTitres"></canvas></div>
+          <div id="peaTitresList" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Répartition par Ligne — Détail</span></div>
+          <div id="peaTitresBreakdown" style="font-size:12px"></div>
+        </div>
+      </div>
+
+      <div class="info-note" style="margin-bottom:16px">
+        💡 <strong>PEA</strong> : plafond de versement 150 000 € (hors PEA-PME 225 000 €), exonération IR après 5 ans (PS 17,2% restants) — avant 5 ans, retrait = Flat Tax 30% + clôture. <strong>CTO</strong> : pas de plafond, Flat Tax (PFU) 30% sur les plus-values et dividendes dès le 1er euro, option barème progressif possible. Frais de change ~0,25-1% appliqués sur les titres hors zone EUR. TTF 0,4% sur les actions françaises de plus de 1 Md€ de capitalisation à l'achat.
+      </div>
+
+      <div id="peaComptesList">
+        <div style="text-align:center;padding:40px;color:var(--text3);font-family:var(--font-mono)">Aucun compte. Cliquez sur "+ Ajouter un compte" pour commencer.</div>
+      </div>
+    </section>
+
+    <!-- ═══════ DIVERSIFICATION ═══════ -->
+    <!-- ═══════ SIMULATIONS (à venir) ═══════ -->
+    <section id="simulations" class="section">
+      <h2 class="section-title">Simulations</h2>
+      <p class="section-subtitle">Simulateur patrimonial, simulateur immobilier, assurance-vie</p>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🧮</div>
+          <div class="empty-state-title">Bientôt disponible</div>
+          <div class="empty-state-text">Cette page accueillera le simulateur patrimonial (scénarios prudent / central / dynamique, dont un test de résistance à une baisse des marchés), le simulateur d'achat immobilier et le simulateur d'assurance-vie — séparés de vos données réelles.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ OBJECTIFS (à venir) ═══════ -->
+    <section id="objectifs" class="section">
+      <h2 class="section-title">Objectifs</h2>
+      <p class="section-subtitle">Suivi de vos objectifs financiers</p>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">🎯</div>
+          <div class="empty-state-title">Bientôt disponible</div>
+          <div class="empty-state-text">Vous pourrez y définir des objectifs (sécurité financière, apport immobilier, patrimoine cible…) et suivre leur progression et l'effort d'épargne mensuel nécessaire.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ PARAMÈTRES ═══════ -->
+    <section id="parametres" class="section">
+      <h2 class="section-title">Paramètres</h2>
+      <p class="section-subtitle">Compte, sauvegarde et préférences</p>
+
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Compte</span></div>
+          <div class="user-badge" id="userBadgeSettings" style="font-size:13px;color:var(--text);padding:0 0 14px 0"></div>
+          <button class="btn btn-danger" onclick="doSignOut()">Déconnexion</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Sauvegarde locale</span></div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Vos données sont synchronisées automatiquement sur Supabase. Cette sauvegarde JSON locale sert de filet de secours.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" onclick="exportData()">↓ Exporter (JSON)</button>
+            <button class="btn" onclick="document.getElementById('importFile').click()">↑ Importer un fichier JSON</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Salaire récurrent</span></div>
+          <div id="salaryBadgeWrapSettings" style="margin-bottom:14px"></div>
+          <button class="btn btn-gold" onclick="openSalaireModal()">⚙ Configurer le salaire récurrent</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Cours en temps réel (API)</span></div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Clé API Alpha Vantage utilisée pour actualiser les cours PEA / CTO.</p>
+          <button class="btn" onclick="openApiSettingsModal()">⚙ Paramètres API</button>
+        </div>
+      </div>
+    </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MODALS ═══════════════════════ -->
+
+<!-- Modal Compte Courant -->
+<div class="modal-overlay" id="modalCompte">
+  <div class="modal">
+    <div class="modal-title" id="compteModalTitle">Nouveau Compte</div>
+    <input type="hidden" id="cptEditId">
+    <div class="form-group"><label>Nom du compte</label><input type="text" id="cptLabel" placeholder="ex: Compte courant CIC, Compte joint..."></div>
+    <div class="form-group"><label>Banque / Établissement</label><input type="text" id="cptBanque" placeholder="ex: CIC, Boursorama..."></div>
+    <div class="form-group"><label>Solde initial (€)</label><input type="number" id="cptSoldeInitial" step="0.01" placeholder="0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="cptDeleteBtn" style="display:none" onclick="deleteCompte()">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalCompte')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Budget -->
+<div class="modal-overlay" id="modalBudget">
+  <div class="modal">
+    <div class="modal-title" id="budgetModalTitle">Nouvelle Opération</div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="bType" onchange="updateCategChips()">
+        <option value="revenu">Revenu</option><option value="depense">Dépense</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Catégorie</label>
+      <div class="categ-chips" id="categChips"></div>
+      <input type="text" id="bCateg" placeholder="Ou saisissez librement...">
+    </div>
+    <div class="form-group"><label>Libellé</label><input type="text" id="bLabel" placeholder="ex: Courses Monoprix, Loyer..."></div>
+    <div class="form-group">
+      <label>Compte associé</label>
+      <select id="bCompte"><option value="">— Aucun compte —</option></select>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant (€)</label><input type="number" id="bMontant" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="bDate"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalBudget')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveBudget()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Actif (générique) -->
+<div class="modal-overlay" id="modalActif">
+  <div class="modal">
+    <div class="modal-title" id="actifModalTitle">Nouvel Actif</div>
+    <input type="hidden" id="aEditId">
+
+    <div class="form-group">
+      <label>Catégorie d'actif</label>
+      <select id="aCategory" onchange="toggleActifFields()">
+        <option value="liquide">💧 Liquide — Livret A, LDD, Cash</option>
+        <option value="semiliquide">🔒 Semi-liquide — PEL, AV, PEA, Crypto</option>
+        <option value="immobilier">🏠 Immobilier</option>
+        <option value="physique">💎 Bien Physique — Montre, Art, Voiture...</option>
+      </select>
+    </div>
+
+    <div class="form-group"><label>Libellé</label><input type="text" id="aLabel" placeholder="ex: Livret A, Appartement Bordeaux..."></div>
+
+    <div id="fieldsFinancier">
+      <div class="grid-2">
+        <div class="form-group"><label>Valeur actuelle (€)</label><input type="number" id="aValeur" placeholder="0"></div>
+        <div class="form-group"><label>Versement mensuel (€)</label><input type="number" id="aMensuel" value="0"></div>
+      </div>
+      <div id="fieldLoyer" style="display:none">
+        <div class="form-group"><label>Loyer mensuel perçu (€)</label><input type="number" id="aLoyer" value="0" placeholder="ex: 850"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Taux brut annuel (%)</label><input type="number" id="aTaux" step="0.01" placeholder="ex: 3.0"></div>
+        <div class="form-group" id="fieldFiscal">
+          <label>Régime fiscal</label>
+          <select id="aFiscal">
+            <option value="exonere">Exonéré (Livret A, LDD)</option>
+            <option value="ps">PS 17,2% (PEL>12 ans, PEA>5 ans)</option>
+            <option value="flat">Flat Tax 30% (CTO, PEL récent)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="fieldsPhysique" style="display:none">
+      <div class="form-group">
+        <label>Sous-type</label>
+        <select id="aSubtype">
+          <option value="montre">⌚ Montre</option>
+          <option value="art">🎨 Œuvre d'art</option>
+          <option value="voiture">🚗 Voiture</option>
+          <option value="moto">🏍 Moto</option>
+          <option value="bijou">💍 Bijou</option>
+          <option value="vin">🍷 Vin / Spiritueux</option>
+          <option value="autre">📦 Autre</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Prix d'achat (€)</label><input type="number" id="aAchat" placeholder="0"></div>
+        <div class="form-group"><label>Valeur actuelle (€)</label><input type="number" id="aValeurPhys" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label>Évolution annuelle estimée (%)</label><input type="number" id="aEvolPhys" step="0.1" placeholder="ex: 5 pour montres, -15 pour voitures"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalActif')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveActif()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Modifier Actif (opération rapide) -->
+<div class="modal-overlay" id="modalActifOp">
+  <div class="modal">
+    <div class="modal-title">Opération sur l'actif</div>
+    <div style="font-family:var(--font-mono);font-size:13px;color:var(--gold);margin-bottom:16px" id="opActifLabel"></div>
+    <div class="form-group">
+      <label>Type d'opération</label>
+      <select id="opType">
+        <option value="versement">💰 Versement (ajout)</option>
+        <option value="retrait">💸 Retrait (diminution)</option>
+        <option value="revalorisation">📈 Revalorisation (nouvelle valeur)</option>
+        <option value="taux">📊 Changer le taux</option>
+        <option value="mensuel">🔄 Modifier versement mensuel</option>
+      </select>
+    </div>
+    <div class="form-group"><label id="opMontantLabel">Montant (€)</label><input type="number" id="opMontant" placeholder="0"></div>
+    <div id="opDateWrap" class="form-group"><label>Date de l'opération</label><input type="date" id="opDate"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalActifOp')">Annuler</button>
+      <button class="btn btn-gold" onclick="applyActifOp()">Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Passif -->
+<div class="modal-overlay" id="modalPassif">
+  <div class="modal">
+    <div class="modal-title" id="passifModalTitle">Nouveau Passif / Dette</div>
+    <input type="hidden" id="pEditId">
+    <div class="form-group"><label>Libellé</label><input type="text" id="pLabel" placeholder="ex: Crédit immobilier..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Capital Restant Dû (€)</label><input type="number" id="pCRD" placeholder="0"></div>
+      <div class="form-group"><label>Mensualité (€)</label><input type="number" id="pMensualite" placeholder="0"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Taux nominal (%)</label><input type="number" id="pTaux" step="0.01" placeholder="ex: 1.35"></div>
+      <div class="form-group"><label>Date d'échéance</label><input type="date" id="pEcheance"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deletePassif(document.getElementById('pEditId').value)" id="pDeleteBtn" style="display:none">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalPassif')">Annuler</button>
+      <button class="btn btn-gold" onclick="savePassif()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Salaire Récurrent -->
+<div class="modal-overlay" id="modalSalaire">
+  <div class="modal">
+    <div class="modal-title">💼 Salaire Récurrent</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--font-mono)">Le salaire sera automatiquement ajouté chaque mois à la date définie.</p>
+    <div class="form-group"><label>Libellé</label><input type="text" id="salLabel" value="Salaire net" placeholder="ex: Salaire net, Rémunération..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant mensuel (€)</label><input type="number" id="salMontant" placeholder="3 200" min="0" step="1"></div>
+      <div class="form-group"><label>Jour du mois (1-28)</label><input type="number" id="salJour" value="1" min="1" max="28"></div>
+    </div>
+    <div class="form-group"><label>Catégorie</label>
+      <select id="salCateg">
+        <option value="Salaire">Salaire</option>
+        <option value="Freelance">Freelance</option>
+        <option value="Prime">Prime</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Compte associé</label>
+      <select id="salCompte"><option value="">— Aucun compte —</option></select>
+    </div>
+    <div class="form-group"><label>Appliquer depuis (mois/année)</label>
+      <div class="grid-2">
+        <select id="salFromMonth">
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+        <input type="number" id="salFromYear" value="" placeholder="2025" min="2020" max="2035">
+      </div>
+    </div>
+    <div class="form-group"><label>Jusqu'à (mois/année, vide = indéfini)</label>
+      <div class="grid-2">
+        <select id="salToMonth">
+          <option value="">—</option>
+          <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
+          <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
+          <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+        <input type="number" id="salToYear" placeholder="—" min="2020" max="2040">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteSalaire()" id="salDeleteBtn" style="display:none">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalSalaire')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveSalaire()">Enregistrer &amp; Générer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bien Immobilier (création/édition) -->
+<div class="modal-overlay" id="modalImmoActif">
+  <div class="modal">
+    <div class="modal-title" id="immoActifTitle">Nouveau Bien Immobilier</div>
+    <input type="hidden" id="immoEditActifId">
+    <div class="form-group"><label>Libellé</label><input type="text" id="immoLabel" placeholder="ex: Appartement Nantes T2, Studio Lyon..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Valeur du bien (€)</label><input type="number" id="immoValeur" placeholder="200 000"></div>
+      <div class="form-group"><label>Prix d'acquisition (€)</label><input type="number" id="immoAcquisition" placeholder="190 000" title="Prix d'achat + frais de notaire + travaux"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Loyer mensuel CC (€)</label><input type="number" id="immoLoyer" placeholder="850"></div>
+      <div class="form-group"><label>Capital emprunté (€)</label><input type="number" id="immoCreditCRD" placeholder="0" value="0"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Mensualité crédit (€)</label><input type="number" id="immoCreditMens" placeholder="0" value="0"></div>
+      <div class="form-group"><label>Taux appréciation annuelle (%)</label><input type="number" id="immoApprec" placeholder="2" step="0.1" value="2"></div>
+    </div>
+    <div class="form-group"><label>Régime fiscal</label>
+      <select id="immoFiscal">
+        <option value="nu">Nu — Revenus fonciers (IR + 17,2%)</option>
+        <option value="lmnp">LMNP — Micro-BIC (50% abattement)</option>
+        <option value="lmnp_reel">LMNP réel — Amortissement</option>
+        <option value="sci">SCI — IS 15%</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Adresse</label><input type="text" id="immoAdresse" placeholder="ex: 12 rue des Fleurs, 44000 Nantes"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalImmoActif')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveImmoBien()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Locataire -->
+<div class="modal-overlay" id="modalLocataire">
+  <div class="modal">
+    <div class="modal-title">👤 Entrée / Sortie Locataire</div>
+    <div class="form-group"><label>Bien immobilier</label>
+      <select id="locBienId"></select>
+    </div>
+    <div class="form-group"><label>Nom du locataire</label><input type="text" id="locNom" placeholder="ex: Dupont Jean"></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Date d'entrée</label><input type="date" id="locEntree"></div>
+      <div class="form-group"><label>Date de sortie (vide = actif)</label><input type="date" id="locSortie"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Loyer CC mensuel (€)</label><input type="number" id="locLoyer" placeholder="850"></div>
+      <div class="form-group"><label>Dépôt de garantie (€)</label><input type="number" id="locCaution" placeholder="850"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="locNotes" rows="2" placeholder="État des lieux, remarques..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalLocataire')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveLocataire()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Charge -->
+<div class="modal-overlay" id="modalCharge">
+  <div class="modal">
+    <div class="modal-title">💰 Ajouter une Charge</div>
+    <div class="form-group"><label>Bien immobilier</label>
+      <select id="chargeBienId"></select>
+    </div>
+    <div class="form-group"><label>Type de charge</label>
+      <select id="chargeType" onchange="updateChargeLabel()">
+        <option value="taxe_fonciere">🏛 Taxe foncière</option>
+        <option value="assurance_pno">🛡 Assurance PNO (propriétaire non occupant)</option>
+        <option value="assurance_loyers">📋 Assurance loyers impayés</option>
+        <option value="eau">💧 Eau</option>
+        <option value="electricite">⚡ Électricité</option>
+        <option value="gaz">🔥 Gaz</option>
+        <option value="internet">📡 Internet / Box</option>
+        <option value="copropriete">🏢 Charges de copropriété</option>
+        <option value="gestion">🔑 Frais d'agence / gestion</option>
+        <option value="entretien">🔧 Entretien / réparations</option>
+        <option value="travaux">🏗 Travaux</option>
+        <option value="comptable">📊 Frais comptable</option>
+        <option value="autre">📦 Autre</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Libellé précis</label><input type="text" id="chargeLabel" placeholder="ex: Taxe foncière 2024"></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Montant (€)</label><input type="number" id="chargeMontant" placeholder="0"></div>
+      <div class="form-group"><label>Fréquence</label>
+        <select id="chargeFreq">
+          <option value="mensuel">Mensuelle</option>
+          <option value="trimestriel">Trimestrielle</option>
+          <option value="annuel">Annuelle</option>
+          <option value="ponctuel">Ponctuelle / unique</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Date / Année de référence</label><input type="date" id="chargeDate"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalCharge')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveCharge()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Compte PEA -->
+<div class="modal-overlay" id="modalPeaCompte">
+  <div class="modal">
+    <div class="modal-title" id="peaCompteModalTitle">Nouveau Compte</div>
+    <input type="hidden" id="pcEditId">
+    <div class="form-group"><label>Type de compte</label>
+      <select id="pcType" onchange="togglePcPlafondField()">
+        <option value="PEA">PEA — Plan d'Épargne en Actions</option>
+        <option value="PEA-PME">PEA-PME</option>
+        <option value="CTO">CTO — Compte-Titres Ordinaire</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Nom du compte</label><input type="text" id="pcNom" placeholder="ex: PEA Boursorama, CTO Trade Republic..."></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Banque / Courtier</label><input type="text" id="pcBanque" placeholder="ex: Boursorama, CIC, Trade Republic..."></div>
+      <div class="form-group" id="pcPlafondWrap"><label>Plafond de versement (€)</label><input type="number" id="pcPlafond" value="150000" placeholder="150000"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Frais de courtage (%)</label><input type="number" id="pcCourtagePct" step="0.01" value="0.5" placeholder="ex: 0.5"></div>
+      <div class="form-group"><label>Droits de garde (%/an)</label><input type="number" id="pcGardePct" step="0.01" value="0" placeholder="ex: 0.4"></div>
+    </div>
+    <div class="info-note" id="pcFiscalNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deletePeaCompte()" id="pcDeleteBtn" style="display:none">Supprimer</button>
+      <button class="btn" onclick="closeModal('modalPeaCompte')">Annuler</button>
+      <button class="btn btn-gold" onclick="savePeaCompte()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ligne PEA/CTO -->
+<div class="modal-overlay" id="modalPeaTitre">
+  <div class="modal">
+    <div class="modal-title" id="peaTitreModalTitle">Nouvelle Ligne</div>
+    <input type="hidden" id="ptEditId">
+    <div class="form-group"><label>Compte</label><select id="ptCompteId"></select></div>
+    <div class="grid-2">
+      <div class="form-group"><label>Nom du titre</label><input type="text" id="ptNom" placeholder="ex: LVMH, ETF World Amundi..."></div>
+      <div class="form-group"><label>Ticker / Symbole (pour cours auto)</label><input type="text" id="ptTicker" placeholder="ex: MC.PAR, AAPL, CW8.PAR"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Date d'achat</label><input type="date" id="ptDate"></div>
+      <div class="form-group"><label>Quantité</label><input type="number" id="ptQte" step="0.0001" min="0" placeholder="ex: 10"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Prix d'achat unitaire</label><input type="number" id="ptPrix" step="0.01" min="0" placeholder="ex: 120.50"></div>
+      <div class="form-group"><label>Devise</label>
+        <select id="ptDevise" onchange="toggleFxFraisField()">
+          <option value="EUR">EUR (€)</option>
+          <option value="USD">USD ($)</option>
+          <option value="GBP">GBP (£)</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Frais de courtage (€)</label><input type="number" id="ptFrais" step="0.01" min="0" value="0" placeholder="0"></div>
+      <div class="form-group" id="ptFxFraisWrap" style="display:none"><label>Frais de change (%)</label><input type="number" id="ptFxFrais" step="0.01" min="0" value="0.25" placeholder="ex: 0.25"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>TER — Frais annuels ETF (%)</label><input type="number" id="ptTer" step="0.01" min="0" value="0" placeholder="ex: 0.15"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;padding-bottom:10px">
+        <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="ptTtf" style="width:auto"> Assujetti TTF (0,4%)</label>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Cours actuel — optionnel</label><input type="number" id="ptCours" step="0.01" min="0" placeholder="Laisser vide = prix d'achat"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:10px">
+        <button type="button" class="btn btn-blue" style="width:100%" onclick="fetchPeaTitreCoursForm()">🔄 Récupérer le cours (API)</button>
+      </div>
+    </div>
+    <div id="ptCoursMeta" style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:-8px;margin-bottom:12px"></div>
+    <div class="info-note">💡 Renseigne un ticker (ex: MC.PAR pour LVMH sur Euronext Paris, AAPL pour Apple) et clique sur "Récupérer le cours" pour interroger l'API configurée. Sinon, saisis le cours manuellement — c'est ce cours qui sert à valoriser la ligne.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalPeaTitre')">Annuler</button>
+      <button class="btn btn-gold" onclick="savePeaTitre()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Paramètres API Cours -->
+<div class="modal-overlay" id="modalApiSettings">
+  <div class="modal">
+    <div class="modal-title">⚙ Cours en Temps Réel — Paramètres API</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--font-mono)">Clé API personnelle Alpha Vantage (gratuite sur alphavantage.co). Utilisée uniquement dans ton navigateur, stockée dans le State exporté en JSON. Quota gratuit ≈ 25 requêtes/jour, 5/minute.</p>
+    <div class="form-group"><label>Clé API Alpha Vantage</label><input type="text" id="settApiKey" placeholder="ex: A1B2C3D4E5F6G7H8"></div>
+    <div class="form-group"><label>Durée du cache local (minutes)</label><input type="number" id="settCacheTtl" value="15" min="1" placeholder="15"></div>
+    <div class="info-note">Sans clé API (ou si le quota est atteint / la requête échoue), mets simplement à jour le champ "Cours actuel" manuellement sur chaque ligne — l'application fonctionne intégralement sans API.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modalApiSettings')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveApiSettings()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+
+<!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/budget.js"></script>
+<script src="js/comptes.js"></script>
+<script src="js/liquidites.js"></script>
+<script src="js/actifs.js"></script>
+<script src="js/passifs.js"></script>
+<script src="js/patrimoine.js"></script>
+<script src="js/synthese.js"></script>
+<script src="js/pea.js"></script>
+<script src="js/market-data.js"></script>
+<script src="js/salaire.js"></script>
+<script src="js/immobilier.js"></script>
+<script src="js/render.js"></script>
+<script src="js/import-export.js"></script>
+<script src="js/patrimoine-detail.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
