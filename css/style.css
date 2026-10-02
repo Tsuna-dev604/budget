@@ -65,6 +65,9 @@ html.sidebar-collapsed .sidebar{width:var(--sidebar-w-collapsed)}
 .logo-name{font-family:var(--font-display);font-size:16px;color:var(--text);font-weight:700}
 .logo-sub{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
 html.sidebar-collapsed .logo-text{display:none}
+/* Menu replié (72px) : logo et bouton empilés et centrés — en ligne, le logo était écrasé à ~10px et rogné */
+html.sidebar-collapsed .sidebar-top{flex-direction:column;justify-content:center;gap:12px;padding:16px 0}
+html.sidebar-collapsed .sidebar-logo{flex:none;justify-content:center}
 
 .sidebar-collapse-btn{background:transparent;border:1px solid var(--border2);color:var(--text3);width:26px;height:26px;border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
 .sidebar-collapse-btn:hover{border-color:var(--gold);color:var(--gold)}
@@ -252,6 +255,9 @@ select option{background:var(--bg3);color:var(--text)}
   html.sidebar-collapsed .sidebar .nav-label,
   html.sidebar-collapsed .sidebar .logo-text{display:flex}
   html.sidebar-collapsed .sidebar .logo-text{flex-direction:column}
+  html.sidebar-collapsed .sidebar-top{flex-direction:row;justify-content:flex-start;gap:8px;padding:18px 14px}
+  html.sidebar-collapsed .sidebar-logo{flex:1;justify-content:flex-start}
+  html.sidebar-collapsed .sidebar .nav-item{justify-content:flex-start}
 
   .mobile-topbar{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:90}
   .mobile-menu-btn{background:transparent;border:1px solid var(--border2);color:var(--text);width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0}
