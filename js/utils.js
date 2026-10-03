@@ -2,6 +2,8 @@
 //  Fonctions utilitaires génériques (format, dates, calculs financiers, notifications)
 // ═══════════════════════════════════════
 const uid = () => Math.random().toString(36).slice(2,9);
+// Échappement HTML : à utiliser pour tout texte saisi ou importé injecté dans un template (protection XSS)
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad2 = n => String(n).padStart(2,'0');
 // Date LOCALE AAAA-MM-JJ (toISOString() renvoie la date UTC, décalée d'un jour en France)
 const toLocalISO = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;

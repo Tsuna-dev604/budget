@@ -21,7 +21,7 @@ function compteLabel(id) {
 function populateCompteSelects() {
   const options = '<option value="">— Aucun compte —</option>' +
     state.comptes.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
-  ['bCompte','salCompte','aCompteSource'].forEach(id=>{
+  ['bCompte','salCompte','aCompteSource','csvCompte'].forEach(id=>{
     const el = document.getElementById(id);
     if (!el) return;
     const cur = el.value;
