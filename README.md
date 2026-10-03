@@ -21,6 +21,7 @@ Tout le code est en HTML, CSS et JavaScript, sans étape de build ni framework. 
 Points notables :
 
 - **Opérations récurrentes** : plusieurs salaires, virements ou dépenses fixes, chacun ajouté au Budget le jour choisi du mois, jamais en avance.
+- **Crédits** : le capital restant dû diminue chaque mois (mensualité moins intérêts) au jour de prélèvement. Un bien immobilier avec crédit est rattaché à un passif unique, donc la dette n'est comptée qu'une fois dans le patrimoine net.
 - **Versements programmés** : un actif avec un versement mensuel (ex. PEL +50 €) voit sa valeur augmenter chaque mois au jour choisi, avec débit optionnel d'un compte.
 - **PEA / CTO à deux niveaux** : une ligne par titre (quantité, PRU moyen, rendement), qui se déplie pour détailler les achats à prix et dates différents.
 - **Import CSV** de relevés bancaires : aperçu obligatoire, détection des doublons, règles de catégorisation, annulation du dernier import. Le fichier est lu localement dans le navigateur.
@@ -126,7 +127,7 @@ Les scripts sont chargés dans l'ordre de `index.html` et partagent un état glo
 ## Limites connues
 
 - Les **ventes** de titres (PEA/CTO) ne sont pas gérées, seulement les achats.
-- Le capital restant dû d'un crédit immobilier n'est pas décrémenté automatiquement et ne crée pas de passif correspondant.
+- Le capital restant dû des crédits baisse chaque mois, mais le **paiement de la mensualité** reste à saisir dans le Budget (par exemple en dépense récurrente) : il n'est pas généré automatiquement.
 - Les intérêts des livrets ne sont pas capitalisés automatiquement : seul le versement mensuel l'est.
 - Les calculs fiscaux sont des **estimations indicatives**, pas un conseil fiscal ou financier.
 - L'application est conçue pour un usage personnel, un utilisateur par compte.

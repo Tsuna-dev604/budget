@@ -79,8 +79,8 @@ function loadDemo() {
     {id:uid(),bienId:'immo2',type:'entretien',label:'Entretien chaudière',montant:150,freq:'annuel',date:`${y}-03-15`},
   ];
   state.passifs = [
-    {id:uid(),label:'Crédit immobilier Paris 13e',crd:185000,mensualite:920,taux:1.35,echeance:'2038-06-01'},
-    {id:uid(),label:'Crédit immobilier Lyon',crd:62000,mensualite:420,taux:1.85,echeance:'2034-03-01'},
+    {id:uid(),label:'Crédit immobilier Paris 13e',crd:185000,mensualite:920,taux:1.35,echeance:'2038-06-01',jour:5,_immoRef:'immo1'},
+    {id:uid(),label:'Crédit immobilier Lyon',crd:62000,mensualite:420,taux:1.85,echeance:'2034-03-01',jour:5,_immoRef:'immo2'},
   ];
   // Historique démo — points sur les 12 derniers mois
   state.priceHistory = [];

@@ -31,5 +31,8 @@ function runAutoSync() {
   const m = migratePeaPositions(); // anciennes lignes PEA → positions + achats
   const a = syncRecurrents();
   const b = syncVersementsProgrammes();
-  return m || a || b;
+  const c = syncBiensFromPassifs();   // lie chaque bien à son passif (adoption / création)
+  const d = syncAmortissementCredits(); // fait baisser le capital restant dû des crédits
+  const e = syncBiensFromPassifs();   // répercute le nouveau capital sur les biens
+  return m || a || b || c || d || e;
 }

@@ -22,6 +22,17 @@ function saveImmoBien() {
   if (editId) {
     const idx = state.immoBiens.findIndex(b=>b.id===editId);
     if (idx>=0) state.immoBiens[idx] = bien;
+    // Le crédit du bien vit dans state.passifs (source de vérité unique de la dette) :
+    // les champs du formulaire sont répercutés sur le passif lié.
+    const pl = state.passifs.find(x=>x._immoRef===editId);
+    if (pl) {
+      if (creditCRD > 0) {
+        if (pl.crd !== creditCRD) delete pl.lastAmortYm; // CRD corrigé à la main : on repart de ce capital
+        Object.assign(pl, {crd:creditCRD, mensualite:creditMens, taux:tauxCredit});
+      } else {
+        state.passifs = state.passifs.filter(x=>x!==pl); // crédit soldé
+      }
+    }
     // Le bien a un miroir dans state.actifs (catégorie 'immobilier') pour être compté
     // dans le patrimoine net : il doit être resynchronisé à chaque modification, sinon
     // le patrimoine net reste figé sur l'ancienne valeur (incohérence corrigée).
@@ -32,6 +43,7 @@ function saveImmoBien() {
     // Also create in actifs for portfolio visibility
     state.actifs.push({id:bien.id+'_a', label, category:'immobilier', valeur, mensuel:0, loyer, taux:apprec, fiscal:'ps', _immoRef:bien.id});
   }
+  syncBiensFromPassifs(); // crée le passif d'un nouveau bien avec crédit (ou en adopte un déjà saisi)
   closeModal('modalImmoActif');
   document.getElementById('immoEditActifId').value='';
   notify(editId?'Bien modifié':'Bien enregistré');
@@ -55,11 +67,12 @@ function openEditImmoBien(id) {
   openModal('modalImmoActif');
 }
 function deleteImmoBien(id) {
-  if (!confirm('Supprimer ce bien et ses données associées ?')) return;
+  if (!confirm('Supprimer ce bien et ses données associées (locataires, charges, crédit lié) ?')) return;
   state.immoBiens = state.immoBiens.filter(b=>b.id!==id);
   state.locataires = state.locataires.filter(l=>l.bienId!==id);
   state.charges = state.charges.filter(c=>c.bienId!==id);
   state.actifs = state.actifs.filter(a=>a._immoRef!==id);
+  state.passifs = state.passifs.filter(p=>p._immoRef!==id); // le crédit disparaît avec le bien
   renderAll();
 }
 
