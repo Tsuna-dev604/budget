@@ -194,6 +194,7 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div id="salaryBadgeWrap"></div>
           <button class="btn" onclick="openRecurrentsModal()">🔁 Récurrents</button>
+          <button class="btn" onclick="openImportCsv()">↑ Importer un CSV</button>
           <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
         </div>
       </div>
@@ -942,6 +943,55 @@
   </div>
 </div>
 
+<!-- Modal Import CSV -->
+<div class="modal-overlay" id="modalImportCsv">
+  <div class="modal modal-wide">
+    <div class="modal-title">↑ Importer des opérations (CSV)</div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="csvFile">Fichier CSV (export de votre banque)</label>
+        <button type="button" class="btn" onclick="document.getElementById('csvFile').click()">Choisir un fichier…</button>
+        <input type="file" id="csvFile" accept=".csv,.txt,text/csv" style="display:none" onchange="csvOnFile(event)">
+        <span id="csvFileName" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-left:10px"></span>
+      </div>
+      <div class="form-group">
+        <label for="csvCompte">Compte de rattachement</label>
+        <select id="csvCompte" onchange="csvRebuild()"><option value="">— Aucun compte —</option></select>
+      </div>
+    </div>
+    <div id="csvMapping" style="display:none">
+      <div class="grid-3">
+        <div class="form-group"><label for="csvColDate">Colonne Date</label><select id="csvColDate" onchange="csvRebuild()"></select></div>
+        <div class="form-group"><label for="csvColLabel">Colonne Libellé</label><select id="csvColLabel" onchange="csvRebuild()"></select></div>
+        <div class="form-group"><label for="csvColMontant">Montant unique (signé)</label><select id="csvColMontant" onchange="csvRebuild()"></select></div>
+        <div class="form-group"><label for="csvColDebit">Colonne Débit</label><select id="csvColDebit" onchange="csvRebuild()"></select></div>
+        <div class="form-group"><label for="csvColCredit">Colonne Crédit</label><select id="csvColCredit" onchange="csvRebuild()"></select></div>
+        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:10px">
+          <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="csvHasHeader" style="width:auto" onchange="csvRebuild()"> La 1re ligne est un en-tête</label>
+        </div>
+      </div>
+      <div id="csvSummary" style="font-family:var(--font-mono);font-size:12px;color:var(--gold);margin:4px 0 10px"></div>
+      <div id="csvPreview" class="table-wrap" style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)"></div>
+    </div>
+    <details style="margin-top:16px">
+      <summary style="cursor:pointer;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Règles de catégorisation automatique</summary>
+      <div id="csvRulesList" style="margin:10px 0"></div>
+      <div class="grid-3" style="align-items:end">
+        <div class="form-group"><label for="csvRuleMotif">Le libellé contient</label><input type="text" id="csvRuleMotif" placeholder="ex: CARREFOUR"></div>
+        <div class="form-group"><label for="csvRuleType">Type</label>
+          <select id="csvRuleType" onchange="csvRuleTypeChanged()"><option value="depense">Dépense</option><option value="revenu">Revenu</option></select></div>
+        <div class="form-group"><label for="csvRuleCateg">Catégorie</label><select id="csvRuleCateg"></select></div>
+      </div>
+      <button type="button" class="btn" onclick="csvAddRule()">+ Ajouter la règle</button>
+    </details>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="csvUndoBtn" style="display:none;margin-right:auto" onclick="undoLastImport()">Annuler le dernier import</button>
+      <button class="btn" onclick="closeModal('modalImportCsv')">Annuler</button>
+      <button class="btn btn-gold" id="csvConfirmBtn" onclick="csvConfirmImport()" disabled>Importer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Liste des opérations récurrentes -->
 <div class="modal-overlay" id="modalRecurrents">
   <div class="modal">
@@ -1254,6 +1304,7 @@
 <script src="js/immobilier.js"></script>
 <script src="js/render.js"></script>
 <script src="js/import-export.js"></script>
+<script src="js/import-csv.js"></script>
 <script src="js/patrimoine-detail.js"></script>
 <script src="js/simulations.js"></script>
 <script src="js/objectifs.js"></script>

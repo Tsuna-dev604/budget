@@ -168,6 +168,7 @@ select option{background:var(--bg3);color:var(--text)}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:28px;width:560px;max-width:95vw;max-height:92vh;overflow-y:auto}
+.modal.modal-wide{width:1000px}
 .modal-title{font-family:var(--font-display);font-size:20px;margin-bottom:20px;color:var(--gold)}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
 .section-title{font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:8px}

@@ -133,8 +133,8 @@ function renderBudgetTable() {
     <tr>
       <td>${b.type==='depense'?`<input type="checkbox" class="budget-check" data-id="${b.id}" ${checkedDepenseIds.has(b.id)?'checked':''} onchange="toggleDepenseCheck('${b.id}', this.checked)">`:''}</td>
       <td class="highlight">${b.date}</td>
-      <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${b.label}</td>
-      <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${b.categ||'—'}</span></td>
+      <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${esc(b.label)}</td>
+      <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
       <td>${b.compteId?`<span class="badge badge-blue">${compteLabel(b.compteId)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
       <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':'<span class="badge badge-red">Dépense</span>'}</td>
       <td class="${b.type==='revenu'?'green':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
@@ -348,7 +348,7 @@ function detectAnomalies() {
     if (hist.length>=3) {
       const moy = hist.reduce((a,v)=>a+v,0)/hist.length;
       if (moy>0 && b.montant > moy*2.5 && b.montant>=100) {
-        anomalies.push({sev:(b.montant/moy)*150, icon:'🔴', text:`Dépense inhabituelle détectée : ${fmt(b.montant)} pour « ${b.label} » (${categ}, ${b.date}) — nettement au-dessus de vos dépenses habituelles dans cette catégorie (moyenne : ${fmt(moy)}).`});
+        anomalies.push({sev:(b.montant/moy)*150, icon:'🔴', text:`Dépense inhabituelle détectée : ${fmt(b.montant)} pour « ${esc(b.label)} » (${esc(categ)}, ${b.date}) — nettement au-dessus de vos dépenses habituelles dans cette catégorie (moyenne : ${fmt(moy)}).`});
       }
     }
   });

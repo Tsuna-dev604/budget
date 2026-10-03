@@ -6,7 +6,7 @@
 // qu'un champ ajouté ici (ex. `objectifs`) ne soit jamais oublié ailleurs (§28).
 // Déclaration hissée (function statement) : utilisable ci-dessous avant sa définition textuelle.
 function getDefaultState() {
-  return { budget:[],actifs:[],passifs:[],salaire:null,recurrents:[],immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],objectifs:[],budgetPrevisionnel:{},settings:{apiKeyAlpha:'',cacheTtlMin:15} };
+  return { budget:[],actifs:[],passifs:[],salaire:null,recurrents:[],reglesCateg:[],immoBiens:[],locataires:[],charges:[],priceHistory:[],patrimoineHistory:[],comptes:[],peaComptes:[],peaTitres:[],objectifs:[],budgetPrevisionnel:{},settings:{apiKeyAlpha:'',cacheTtlMin:15} };
 }
 let state = getDefaultState();
 
