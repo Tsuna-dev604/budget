@@ -12,7 +12,8 @@ function getSoldeCompte(compteId, dateStr) {
   const mvts = state.budget.filter(b=>b.compteId===compteId && b.date<=limite);
   const rev = mvts.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
   const dep = mvts.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
-  return (c.soldeInitial||0) + rev - dep;
+  const vir = mvts.filter(b=>b.type==='virement').reduce((s,b)=>s+b.montant,0); // virements d'épargne : le compte est débité
+  return (c.soldeInitial||0) + rev - dep - vir;
 }
 function compteLabel(id) {
   const c = state.comptes.find(x=>x.id===id);
@@ -20,7 +21,7 @@ function compteLabel(id) {
 }
 function populateCompteSelects() {
   const options = '<option value="">— Aucun compte —</option>' +
-    state.comptes.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+    state.comptes.map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join('');
   ['bCompte','salCompte','aCompteSource','csvCompte'].forEach(id=>{
     const el = document.getElementById(id);
     if (!el) return;
@@ -71,6 +72,9 @@ function deleteCompte(idParam) {
   if (!confirm('Supprimer ce compte ? Les opérations liées resteront mais ne seront plus rattachées à un compte.')) return;
   state.comptes = state.comptes.filter(c=>c.id!==id);
   state.budget.forEach(b=>{if(b.compteId===id) b.compteId=null;});
+  // Les automatismes qui pointaient vers ce compte ne doivent pas rester rattachés à un compte disparu.
+  state.actifs.forEach(a=>{if(a.compteSourceId===id) a.compteSourceId=null;});
+  getRecurrents().forEach(r=>{if(r.compteId===id) r.compteId=null;});
   closeModal('modalCompte');
   notify('Compte supprimé');
   renderAll();
@@ -99,6 +103,7 @@ function renderComptes() {
     const nbOps = state.budget.filter(b=>b.compteId===c.id).length;
     const rev = state.budget.filter(b=>b.compteId===c.id&&b.type==='revenu').reduce((s,b)=>s+b.montant,0);
     const dep = state.budget.filter(b=>b.compteId===c.id&&b.type==='depense').reduce((s,b)=>s+b.montant,0);
+    const vir = state.budget.filter(b=>b.compteId===c.id&&b.type==='virement').reduce((s,b)=>s+b.montant,0);
     return `<div class="card">
       <div class="card-header">
         <span class="card-title">🏦 ${c.label}</span>
@@ -114,6 +119,7 @@ function renderComptes() {
       <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px">
         <span style="color:var(--green)">+${fmt(rev)}</span>
         <span style="color:var(--red)">−${fmt(dep)}</span>
+        ${vir>0?`<span style="color:var(--blue)" title="Virements vers l'épargne">⇢ ${fmt(vir)}</span>`:''}
         <span style="color:var(--text3)">${nbOps} opération(s)</span>
       </div>
     </div>`;

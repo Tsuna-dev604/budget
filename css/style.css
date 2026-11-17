@@ -143,6 +143,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;color:
 td.highlight{color:var(--text);font-weight:500}
 td.green{color:var(--green);font-family:var(--font-mono)}
 td.red{color:var(--red);font-family:var(--font-mono)}
+td.blue{color:var(--blue);font-family:var(--font-mono)}
 td.gold{color:var(--gold);font-family:var(--font-mono)}
 td.blue{color:var(--blue);font-family:var(--font-mono)}
 tr:last-child td{border-bottom:none}

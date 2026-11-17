@@ -45,7 +45,7 @@ function syncRecurrents() {
     while (guard++ < 600) {
       if (ym > nowYm) break;
       if (toYm && ym > toYm) break;
-      const date = `${ym}-${pad2(Math.min(r.jour||1, daysInMonth(ym)))}`;
+      const date = dateEcheance(ym, r.jour);
       if (date > now) break; // pas encore échu : on attend le jour J
       if (!r.lastSyncYm || ym > r.lastSyncYm) {
         if (!state.budget.some(b=>b._recId===r.id && b._ym===ym)) {
@@ -53,6 +53,7 @@ function syncRecurrents() {
             id:uid(), label:r.label, categ:r.categ, compteId:r.compteId||null,
             montant:r.montant, type:r.type||'revenu', date, _recId:r.id, _ym:ym
           });
+          lastSyncReport.recurrents.push({label:r.label, montant:r.montant, type:r.type||'revenu', date});
         }
         r.lastSyncYm = ym;
         changed = true;
@@ -64,6 +65,30 @@ function syncRecurrents() {
 }
 // Compatibilité avec l'ancien nom
 function applySalaire() { return syncRecurrents(); }
+
+// Prochaine date à laquelle l'opération sera ajoutée au Budget (null si la période est terminée).
+function getRecurrentProchaineEcheance(r) {
+  if (!r.fromYear || !r.fromMonth || !(r.montant>0)) return null;
+  const now = today(), nowYm = now.slice(0,7);
+  const startYm = `${r.fromYear}-${pad2(r.fromMonth)}`;
+  const toYm = (r.toYear && r.toMonth) ? `${r.toYear}-${pad2(r.toMonth)}` : null;
+  let ym = startYm > nowYm ? startYm : nowYm;
+  for (let i=0; i<3; i++) {
+    if (toYm && ym > toYm) return null;
+    const date = dateEcheance(ym, r.jour);
+    if (date > now) return date;
+    ym = nextYm(ym);
+  }
+  return null;
+}
+
+// Bouton « Appliquer les échéances » : lance la synchronisation à la demande et dit ce qui s'est passé.
+function applyEcheancesNow() {
+  runAutoSync();
+  renderAll();
+  if (document.getElementById('modalRecurrents').classList.contains('open')) renderRecurrentsList();
+  if (!notifySyncReport()) notify('Tout est à jour : aucune échéance à appliquer');
+}
 
 // ── Liste ──
 function openRecurrentsModal() {
@@ -84,10 +109,16 @@ function renderRecurrentsList() {
     const isRev = (r.type||'revenu')==='revenu';
     const depuis = `${REC_MOIS[r.fromMonth]||''} ${r.fromYear||''}`;
     const jusqua = (r.toYear && r.toMonth) ? ` → ${REC_MOIS[r.toMonth]} ${r.toYear}` : '';
+    const prochaine = getRecurrentProchaineEcheance(r);
+    // Sans compte rattaché, l'opération apparaît dans le Budget mais n'a aucun effet sur un solde de compte.
+    const compteOk = r.compteId && state.comptes.some(c=>c.id===r.compteId);
+    const compteTxt = compteOk ? esc(compteLabel(r.compteId))
+      : (state.comptes.length ? '<span style="color:var(--red)">⚠ sans compte : aucun solde mis à jour</span>' : 'sans compte');
     return `<div class="alloc-row" style="gap:12px">
       <div style="min-width:0">
-        <div style="color:var(--text);font-weight:500">${r.label} <span class="badge ${isRev?'badge-green':'badge-red'}" style="margin-left:6px">${isRev?'Revenu':'Dépense'}</span></div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">le ${r.jour||1} du mois · ${r.categ||'—'} · ${r.compteId?compteLabel(r.compteId):'sans compte'} · ${depuis}${jusqua}</div>
+        <div style="color:var(--text);font-weight:500">${esc(r.label)} <span class="badge ${isRev?'badge-green':'badge-red'}" style="margin-left:6px">${isRev?'Revenu':'Dépense'}</span></div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">le ${r.jour||1} du mois · ${esc(r.categ||'—')} · ${compteTxt} · ${depuis}${jusqua}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">${prochaine ? 'Prochaine échéance : '+fmtDateFr(prochaine) : 'Période terminée'}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
         <span style="font-family:var(--font-mono);font-weight:600;color:${isRev?'var(--green)':'var(--red)'}">${isRev?'+':'−'}${fmt(r.montant)}</span>
@@ -122,7 +153,8 @@ function openRecurrentForm(id) {
   document.getElementById('salLabel').value = r ? r.label : (type==='revenu' ? 'Salaire net' : '');
   document.getElementById('salMontant').value = r ? r.montant : '';
   document.getElementById('salJour').value = r ? (r.jour||1) : 1;
-  document.getElementById('salCompte').value = r ? (r.compteId||'') : '';
+  // Nouveau : on propose d'office le premier compte (sinon l'opération n'alimente aucun solde).
+  document.getElementById('salCompte').value = r ? (r.compteId||'') : (state.comptes[0] ? state.comptes[0].id : '');
   document.getElementById('salFromMonth').value = r ? r.fromMonth : now.getMonth()+1;
   document.getElementById('salFromYear').value = r ? r.fromYear : now.getFullYear();
   document.getElementById('salToMonth').value = r ? (r.toMonth||'') : '';
@@ -141,7 +173,7 @@ function saveRecurrent() {
     id: editId || ('rec_'+uid()),
     label: document.getElementById('salLabel').value.trim() || (type==='revenu' ? 'Revenu récurrent' : 'Dépense récurrente'),
     type, montant,
-    jour: Math.min(28, Math.max(1, parseInt(document.getElementById('salJour').value)||1)),
+    jour: clampJourMois(document.getElementById('salJour').value),
     categ: document.getElementById('salCateg').value,
     compteId: document.getElementById('salCompte').value || null,
     fromMonth: parseInt(document.getElementById('salFromMonth').value),
@@ -151,8 +183,17 @@ function saveRecurrent() {
     lastSyncYm: null
   };
   if (editId) {
-    // Régénère l'historique de cette opération (montant / jour / période modifiés)
-    state.budget = state.budget.filter(b=>b._recId!==editId);
+    // Les mois déjà ajoutés au Budget : les réécrire (correction d'une erreur) ou les conserver
+    // (ex. augmentation de salaire : les anciens mois gardent leur ancien montant).
+    const nowYm = today().slice(0,7);
+    const dejaGenere = state.budget.some(b=>b._recId===editId);
+    const reecrire = !dejaGenere || confirm('Appliquer cette modification aux mois déjà ajoutés au Budget ?\n\nOK = oui, tout régénérer · Annuler = non, seulement à partir de ce mois');
+    if (reecrire) {
+      state.budget = state.budget.filter(b=>b._recId!==editId);
+    } else {
+      state.budget = state.budget.filter(b=>!(b._recId===editId && (b._ym||b.date.slice(0,7)) >= nowYm));
+      rec.lastSyncYm = prevYm(nowYm);
+    }
     const idx = getRecurrents().findIndex(x=>x.id===editId);
     if (idx>=0) state.recurrents[idx] = rec; else state.recurrents.push(rec);
   } else {
