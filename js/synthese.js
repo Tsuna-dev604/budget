@@ -172,7 +172,7 @@ function renderFluxMois() {
     <hr class="divider">
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
       ${step('Cash conservé', cash, 'var(--text)')}
-      ${step('Investi (versements programmés)', investi, 'var(--blue)')}
+      ${step('Viré vers l\'épargne', investi, 'var(--blue)')}
     </div>
     `;
 }

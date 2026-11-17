@@ -32,11 +32,11 @@ function getEpargneMoisCourant() {
   const now = today();
   const ym = now.slice(0,7);
   // Seules les opérations DÉJÀ survenues (date ≤ aujourd'hui) comptent : un salaire prévu le 25
-  // n'apparaît pas le 3. Les virements vers un actif d'épargne (_versementActif) ne sont pas
-  // des dépenses de consommation : ils sont de l'épargne.
+  // n'apparaît pas le 3. Les virements vers un actif d'épargne (type « virement ») ne sont ni des
+  // dépenses ni des revenus : ils restent hors de ce calcul.
   const items = state.budget.filter(b=>b.date.startsWith(ym) && b.date<=now);
   const rev = items.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
-  const dep = items.filter(b=>b.type==='depense' && !b._versementActif).reduce((s,b)=>s+b.montant,0);
+  const dep = items.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
   return {rev,dep,solde:rev-dep};
 }
 // Épargne cumulée depuis le début (toutes opérations confondues).
@@ -72,14 +72,11 @@ function getAllocationClasses() {
   return {groups, total};
 }
 
-// Répartit un montant d'épargne entre "cash conservé" et "investi", sur la base des
-// versements mensuels déjà programmés sur les actifs liquides/semi-liquides (aMensuel).
-// Ne fabrique aucune donnée : purement dérivé des versements réellement configurés.
+// Répartit l'épargne du mois entre « cash conservé » sur les comptes et « viré vers l'épargne »,
+// d'après les virements réellement effectués ce mois-ci (type « virement » du Budget, voir epargne.js).
+// Ne fabrique aucune donnée : un virement programmé pas encore échu n'est pas compté.
 function getCashInvestiSplit(soldeMontant) {
-  const investiConfigure = state.actifs
-    .filter(a=>a.category==='liquide'||a.category==='semiliquide')
-    .reduce((s,a)=>s+(a.mensuel||0),0);
-  const investi = Math.max(0, Math.min(soldeMontant, investiConfigure));
+  const investi = Math.max(0, Math.min(soldeMontant, getVirementsEpargneMois()));
   const cash = soldeMontant - investi;
   return {cash, investi};
 }

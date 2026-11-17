@@ -19,6 +19,12 @@ function nextYm(ym) { const [y,m]=ym.split('-').map(Number); return m===12?`${y+
 function prevYm(ym) { const [y,m]=ym.split('-').map(Number); return m===1?`${y-1}-12`:`${y}-${pad2(m-1)}`; }
 function daysInMonth(ym) { const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
 const currentYear = () => new Date().getFullYear();
+// Jour de mois saisi par l'utilisateur, borné à 1-31.
+const clampJourMois = j => Math.min(31, Math.max(1, parseInt(j)||1));
+// Date d'échéance d'un jour de mois dans le mois AAAA-MM. Les jours 29 à 31 sont ramenés au
+// dernier jour des mois plus courts (un salaire « le 31 » tombe le 30 avril, le 28 février…).
+function dateEcheance(ym, jour) { return `${ym}-${pad2(Math.min(clampJourMois(jour), daysInMonth(ym)))}`; }
+const fmtDateFr = iso => new Date(iso+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
 
 // Filtres temporels standard, réutilisés par tout graphique historique (Synthèse, Liquidités…)
 const PERIODES = [

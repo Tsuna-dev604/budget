@@ -193,6 +193,7 @@
         <div><h2 class="section-title">Gestion du Budget</h2><p class="section-subtitle">Suivi mensuel · Récap annuel · Analyse par catégorie</p></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <div id="salaryBadgeWrap"></div>
+          <button class="btn" onclick="applyEcheancesNow()" title="Ajoute au Budget les salaires et virements arrivés à échéance">⟳ Appliquer les échéances</button>
           <button class="btn" onclick="openRecurrentsModal()">🔁 Récurrents</button>
           <button class="btn" onclick="openImportCsv()">↑ Importer un CSV</button>
           <button class="btn btn-gold" onclick="openAddBudget()">+ Nouvelle opération</button>
@@ -202,13 +203,13 @@
       <div class="grid-4" style="margin-bottom:24px">
         <div class="card card-sm"><div class="card-title">Revenus (mois sélect.)</div><div class="card-value green" id="bRevenu">0 €</div></div>
         <div class="card card-sm"><div class="card-title">Dépenses (mois sélect.)</div><div class="card-value red" id="bDepense">0 €</div></div>
-        <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div></div>
+        <div class="card card-sm"><div class="card-title">Solde Net</div><div class="card-value" id="bSolde">0 €</div><div class="card-sub" id="bVirements"></div></div>
         <div class="card card-sm"><div class="card-title">Taux d'Épargne</div><div class="card-value" id="bTauxEpargne">—</div></div>
       </div>
 
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
         <select id="filterBudgetType" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()">
-          <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option>
+          <option value="all">Tous types</option><option value="revenu">Revenus</option><option value="depense">Dépenses</option><option value="virement">Virements d'épargne</option>
         </select>
         <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
         </select>
@@ -326,6 +327,18 @@
       </div>
 
       <div id="comptesList" class="grid-3"></div>
+
+      <!-- Épargne automatique : virements programmés compte → livret -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px">
+          <div>
+            <span class="card-title">Épargne automatique</span>
+            <div class="card-sub" id="virementsEpargneSub"></div>
+          </div>
+          <button class="btn btn-gold" onclick="openVirementEpargne()">+ Programmer un virement</button>
+        </div>
+        <div id="virementsEpargneList"></div>
+      </div>
 
       <!-- Historique des soldes — §11 -->
       <div class="card" style="margin-top:16px">
@@ -810,7 +823,7 @@
       </div>
       <div id="fieldVersementOpts">
         <div class="grid-2">
-          <div class="form-group"><label for="aJourVersement">Jour du versement (1-28)</label><input type="number" id="aJourVersement" min="1" max="28" value="1"></div>
+          <div class="form-group"><label for="aJourVersement">Jour du versement (1-31)</label><input type="number" id="aJourVersement" min="1" max="31" value="1"></div>
           <div class="form-group"><label for="aCompteSource">Prélevé sur le compte</label><select id="aCompteSource"><option value="">— Aucun compte —</option></select></div>
         </div>
         </div>
@@ -993,6 +1006,29 @@
   </div>
 </div>
 
+<!-- Modal Virement d'épargne programmé (compte → livret) -->
+<div class="modal-overlay" id="modalVirement">
+  <div class="modal">
+    <div class="modal-title" id="vrModalTitle">Nouveau virement programmé</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--font-mono)">Chaque mois, au jour choisi et jamais en avance : le compte est débité et le livret crédité. Ce n'est pas une dépense, votre patrimoine net ne change pas.</p>
+    <div class="form-group"><label for="vrActif">Vers (livret / épargne)</label><select id="vrActif" onchange="onVirementActifChange()"></select></div>
+    <div class="form-group"><label for="vrCompte">Depuis le compte</label><select id="vrCompte" onchange="updateVirementInfo()"></select></div>
+    <div class="grid-2">
+      <div class="form-group"><label for="vrMontant">Montant mensuel (€)</label><input type="number" id="vrMontant" min="0" step="0.01" placeholder="200"></div>
+      <div class="form-group"><label for="vrJour">Jour du mois (1-31)</label><input type="number" id="vrJour" min="1" max="31" value="1" oninput="updateVirementInfo()"></div>
+    </div>
+    <div class="form-group" id="vrRattrapageWrap">
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="vrRattrapage" onchange="updateVirementInfo()"> Appliquer aussi l'échéance de ce mois-ci si son jour est passé</label>
+    </div>
+    <div id="vrInfo" style="font-size:12px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="vrStopBtn" onclick="stopVirementEpargne()" style="margin-right:auto;display:none">Arrêter</button>
+      <button class="btn" onclick="closeModal('modalVirement')">Annuler</button>
+      <button class="btn btn-gold" onclick="saveVirementEpargne()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Liste des opérations récurrentes -->
 <div class="modal-overlay" id="modalRecurrents">
   <div class="modal">
@@ -1023,7 +1059,7 @@
     <div class="form-group"><label for="salLabel">Libellé</label><input type="text" id="salLabel" placeholder="ex: Salaire net, Pension, Virement conjoint..."></div>
     <div class="grid-2">
       <div class="form-group"><label for="salMontant">Montant mensuel (€)</label><input type="number" id="salMontant" placeholder="3 200" min="0" step="0.01"></div>
-      <div class="form-group"><label for="salJour">Jour du mois (1-28)</label><input type="number" id="salJour" value="1" min="1" max="28"></div>
+      <div class="form-group"><label for="salJour">Jour du mois (1-31)</label><input type="number" id="salJour" value="1" min="1" max="31"></div>
     </div>
     <div class="form-group">
       <label for="salCompte">Compte associé</label>
@@ -1295,6 +1331,7 @@
 <script src="js/budget.js"></script>
 <script src="js/comptes.js"></script>
 <script src="js/liquidites.js"></script>
+<script src="js/epargne.js"></script>
 <script src="js/actifs.js"></script>
 <script src="js/passifs.js"></script>
 <script src="js/patrimoine.js"></script>

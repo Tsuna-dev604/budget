@@ -53,6 +53,7 @@ function saveBudget() {
 function editBudget(id) {
   const b = state.budget.find(x=>x.id===id);
   if (!b) return;
+  if (b.type==='virement') { notify('Ce virement d\'épargne se modifie depuis Liquidités › Épargne automatique', true); return; }
   editBudgetId = id;
   document.getElementById('budgetModalTitle').textContent = 'Modifier l\'opération';
   document.getElementById('bType').value = b.type;
@@ -67,6 +68,8 @@ function editBudget(id) {
 }
 function deleteBudget(id) {
   if (!confirm('Supprimer cette opération ?')) return;
+  const cible = state.budget.find(b=>b.id===id);
+  if (cible && cible._versementActif) retirerVirementDuLivret(cible); // défait aussi l'effet sur le livret
   state.budget = state.budget.filter(b=>b.id!==id);
   checkedDepenseIds.delete(id);
   renderAll();
@@ -111,8 +114,9 @@ function renderBudgetTable() {
   if (month!=='all') items = items.filter(b=>b.date.slice(5,7)===month);
   if (type!=='all') items = items.filter(b=>b.type===type);
 
-  let rev=0, dep=0;
-  items.forEach(b=>{if(b.type==='revenu')rev+=b.montant;else dep+=b.montant;});
+  // Un virement d'épargne n'est ni un revenu ni une dépense : il est exclu du solde net et du taux d'épargne.
+  let rev=0, dep=0, vir=0;
+  items.forEach(b=>{if(b.type==='revenu')rev+=b.montant;else if(b.type==='virement')vir+=b.montant;else dep+=b.montant;});
   document.getElementById('bRevenu').textContent = fmt(rev);
   document.getElementById('bDepense').textContent = fmt(dep);
   const solde = rev-dep;
@@ -124,6 +128,8 @@ function renderBudgetTable() {
     if (rev>0) { tauxEl.textContent = fmtPct(solde/rev*100,1); tauxEl.className = 'card-value '+(solde>=0?'green':'red'); }
     else { tauxEl.textContent = '—'; tauxEl.className = 'card-value'; }
   }
+  const virEl = document.getElementById('bVirements');
+  if (virEl) virEl.textContent = vir>0 ? `dont ${fmt(vir)} virés vers l'épargne` : '';
 
   const lbl = month==='all'?`Année ${year}`:`${MOIS[parseInt(month)]} ${year}`;
   document.getElementById('budgetMonthLabel').textContent = lbl;
@@ -136,8 +142,8 @@ function renderBudgetTable() {
       <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${esc(b.label)}</td>
       <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
       <td>${b.compteId?`<span class="badge badge-blue">${compteLabel(b.compteId)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
-      <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':'<span class="badge badge-red">Dépense</span>'}</td>
-      <td class="${b.type==='revenu'?'green':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
+      <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':b.type==='virement'?'<span class="badge badge-blue">Épargne</span>':'<span class="badge badge-red">Dépense</span>'}</td>
+      <td class="${b.type==='revenu'?'green':b.type==='virement'?'blue':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
       <td><div class="row-actions">
         <button class="icon-btn" onclick="editBudget('${b.id}')">✎</button>
         <button class="icon-btn del" onclick="deleteBudget('${b.id}')">✕</button>

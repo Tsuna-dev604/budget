@@ -20,9 +20,9 @@ Tout le code est en HTML, CSS et JavaScript, sans étape de build ni framework. 
 
 Points notables :
 
-- **Opérations récurrentes** : plusieurs salaires, virements ou dépenses fixes, chacun ajouté au Budget le jour choisi du mois, jamais en avance.
+- **Opérations récurrentes** : plusieurs salaires, virements ou dépenses fixes, chacun ajouté au Budget le jour choisi du mois (1 à 31, les jours 29-31 tombent le dernier jour des mois courts), jamais en avance. Les mois manqués sont rattrapés à l'ouverture, la prochaine échéance est affichée, et le bouton « Appliquer les échéances » force la synchronisation.
 - **Crédits** : le capital restant dû diminue chaque mois (mensualité moins intérêts) au jour de prélèvement. Un bien immobilier avec crédit est rattaché à un passif unique, donc la dette n'est comptée qu'une fois dans le patrimoine net.
-- **Versements programmés** : un actif avec un versement mensuel (ex. PEL +50 €) voit sa valeur augmenter chaque mois au jour choisi, avec débit optionnel d'un compte.
+- **Épargne automatique** (page Liquidités) : un virement mensuel programmé d'un compte vers un livret, un PEL ou une assurance-vie. Au jour choisi, le compte est débité et le livret crédité. L'opération est enregistrée dans le Budget comme un **virement** (badge « Épargne ») : ni dépense ni revenu, elle ne fausse ni les dépenses, ni le taux d'épargne, et le patrimoine net ne change pas. Supprimer un virement du Budget propose d'annuler aussi son effet sur le livret. Sans compte source, le livret est crédité sans débit (le patrimoine net augmente alors d'autant).
 - **PEA / CTO à deux niveaux** : une ligne par titre (quantité, PRU moyen, rendement), qui se déplie pour détailler les achats à prix et dates différents.
 - **Import CSV** de relevés bancaires : aperçu obligatoire, détection des doublons, règles de catégorisation, annulation du dernier import. Le fichier est lu localement dans le navigateur.
 - Menu latéral rétractable, thème clair et sombre.
@@ -98,8 +98,9 @@ js/
   render.js           Affichage global et synchronisation des échéances
   budget.js           Budget et évolution des dépenses
   salaire.js          Opérations récurrentes
+  epargne.js          Épargne automatique (virements compte → livret)
   comptes.js          Comptes et soldes
-  actifs.js           Actifs et versements programmés
+  actifs.js           Actifs
   passifs.js          Passifs
   patrimoine*.js      Patrimoine net, allocation, détail
   immobilier.js       Biens, crédits, loyers
@@ -128,6 +129,6 @@ Les scripts sont chargés dans l'ordre de `index.html` et partagent un état glo
 
 - Les **ventes** de titres (PEA/CTO) ne sont pas gérées, seulement les achats.
 - Le capital restant dû des crédits baisse chaque mois, mais le **paiement de la mensualité** reste à saisir dans le Budget (par exemple en dépense récurrente) : il n'est pas généré automatiquement.
-- Les intérêts des livrets ne sont pas capitalisés automatiquement : seul le versement mensuel l'est.
+- Les intérêts des livrets ne sont pas capitalisés automatiquement : seul le virement mensuel l'est.
 - Les calculs fiscaux sont des **estimations indicatives**, pas un conseil fiscal ou financier.
 - L'application est conçue pour un usage personnel, un utilisateur par compte.

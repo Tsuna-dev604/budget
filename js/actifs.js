@@ -72,7 +72,7 @@ function saveActif() {
     const prevA = editId ? state.actifs.find(x=>x.id===editId) : null;
     const isEpargne = cat==='liquide'||cat==='semiliquide';
     actif = {...actif, valeur, mensuel, loyer, taux, fiscal:document.getElementById('aFiscal').value,
-      jourVersement: Math.min(28, Math.max(1, parseInt(document.getElementById('aJourVersement').value)||1)),
+      jourVersement: clampJourMois(document.getElementById('aJourVersement').value),
       compteSourceId: isEpargne ? (document.getElementById('aCompteSource').value||null) : null,
       // suivi des versements automatiques : conservé si un versement était déjà en place
       lastVersementYm: (prevA && prevA.mensuel>0) ? prevA.lastVersementYm : undefined,
@@ -236,48 +236,4 @@ function renderActifs() {
   document.getElementById('totalLoyers2').textContent = fmt(totalL)+'/mois';
   const cptEl = document.getElementById('totalComptesActifs');
   if (cptEl) cptEl.textContent = fmt(totalC);
-}
-
-
-// ═══════════════════════════════════════
-//  VERSEMENTS MENSUELS PROGRAMMÉS
-//  Un actif (livret, PEL, assurance-vie…) avec « versement mensuel » > 0 voit sa valeur
-//  augmenter automatiquement chaque mois, à `jourVersement`, jamais en avance. Si un compte
-//  source est choisi, le montant y est débité (catégorie « Épargne »).
-//  Idempotent : lastVersementYm mémorise le dernier mois appliqué (pas de doublon, rattrapage
-//  des mois manqués si l'application n'a pas été ouverte). À la 1re prise en compte, la valeur
-//  saisie est supposée déjà à jour : aucun rattrapage rétroactif.
-//  Retourne true si l'état a changé.
-// ═══════════════════════════════════════
-function syncVersementsProgrammes() {
-  const now = today(), nowYm = now.slice(0,7);
-  let changed = false;
-  state.actifs.forEach(a=>{
-    if (!(a.mensuel>0) || !['liquide','semiliquide'].includes(a.category)) {
-      if (a.lastVersementYm) { delete a.lastVersementYm; changed = true; } // versement arrêté : pas de rattrapage s'il reprend
-      return;
-    }
-    const jour = Math.min(Math.max(a.jourVersement||1,1),28);
-    const dateDuMois = ym => `${ym}-${pad2(Math.min(jour, daysInMonth(ym)))}`;
-    if (!a.lastVersementYm) {
-      a.lastVersementYm = dateDuMois(nowYm) <= now ? nowYm : prevYm(nowYm);
-      changed = true;
-    }
-    let guard = 0;
-    while (guard++ < 600) {
-      const ym = nextYm(a.lastVersementYm);
-      if (ym > nowYm) break;
-      const date = dateDuMois(ym);
-      if (date > now) break;
-      a.valeur = (a.valeur||0) + a.mensuel;
-      a.lastVersementYm = ym;
-      a.dernierVersementDate = date;
-      recordPrice(a.id, a.valeur, date);
-      if (a.compteSourceId && state.comptes.some(c=>c.id===a.compteSourceId)) {
-        state.budget.push({id:uid(), label:`Versement ${a.label}`, categ:'Épargne', montant:a.mensuel, type:'depense', date, compteId:a.compteSourceId, _versementActif:a.id, _ym:ym});
-      }
-      changed = true;
-    }
-  });
-  return changed;
 }
