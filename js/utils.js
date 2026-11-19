@@ -115,7 +115,7 @@ function categBarListHtml(items, type) {
   return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
     <div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;font-size:12px;align-items:center">
-        <span style="color:${CATEG_COLORS[c]||'var(--text3)'}">● ${c}</span>
+        <span style="color:${CATEG_COLORS[c]||'var(--text3)'}">● ${esc(c)}</span>
         <span style="font-family:var(--font-mono);white-space:nowrap">${fmt(v)} <span style="color:var(--text3)">(${fmtPct(v/total*100,0)})</span></span>
       </div>
       <div class="categ-bar-wrap"><div class="categ-bar" style="width:${v/total*100}%;background:${CATEG_COLORS[c]||'var(--text3)'}"></div></div>

@@ -80,7 +80,7 @@ function deleteImmoBien(id) {
 //  IMMOBILIER — LOCATAIRES
 // ═══════════════════════════════════════
 function populateBienSelects() {
-  const options = state.immoBiens.map(b=>`<option value="${b.id}">${b.label}</option>`).join('')
+  const options = state.immoBiens.map(b=>`<option value="${b.id}">${esc(b.label)}</option>`).join('')
     || '<option value="">— Aucun bien —</option>';
   ['locBienId','chargeBienId'].forEach(id=>{
     const el = document.getElementById(id);
@@ -159,7 +159,7 @@ function showImmoTab(id, el) {
 
 function getFiscalLabel(f) {
   const m={nu:'Nu (IR)',lmnp:'LMNP Micro-BIC',lmnp_reel:'LMNP Réel',sci:'SCI IS 15%'};
-  return m[f]||f;
+  return m[f]||esc(f);
 }
 function getTaxRate(f) {
   // Approximate net tax rate on rental income
@@ -222,8 +222,8 @@ function renderImmoBiensList() {
     return `<div class="immo-card">
       <div class="immo-card-header">
         <div>
-          <div class="immo-prop-title">🏠 ${b.label}</div>
-          ${b.adresse?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">📍 ${b.adresse}</div>`:''}
+          <div class="immo-prop-title">🏠 ${esc(b.label)}</div>
+          ${b.adresse?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">📍 ${esc(b.adresse)}</div>`:''}
         </div>
         <div style="display:flex;gap:6px">
           <span class="badge badge-gray">${getFiscalLabel(b.fiscal)}</span>
@@ -245,8 +245,8 @@ function renderImmoBiensList() {
         <div class="immo-metric"><div class="immo-metric-label">CRD Crédit</div><div class="immo-metric-val" style="color:var(--red)">${fmt(b.creditCRD||0)}</div></div>
         <div class="immo-metric"><div class="immo-metric-label">Prix d'achat</div><div class="immo-metric-val">${fmt(b.acquisition||b.valeur)}</div></div>
       </div>
-      ${locActifs.length?`<div style="margin-bottom:8px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Locataire actuel</div>${locActifs.map(l=>`<div class="tenant-row"><div class="tenant-status actif"></div><span style="font-weight:500;color:var(--text)">${l.nom}</span><span style="color:var(--text3);font-size:11px">Depuis ${l.entree}</span><span class="badge badge-green" style="margin-left:auto">${fmt(l.loyer)}/m</span><span style="color:var(--text3);font-size:11px;margin-left:8px">Caution: ${fmt(l.caution)}</span></div>`).join('')}</div>`:''}
-      ${locHisto.length?`<div><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Anciens locataires (${locHisto.length})</div>${locHisto.slice(-2).map(l=>`<div class="tenant-row" style="opacity:.6"><div class="tenant-status parti"></div><span style="color:var(--text2)">${l.nom}</span><span style="color:var(--text3);font-size:11px">${l.entree} → ${l.sortie}</span></div>`).join('')}</div>`:''}
+      ${locActifs.length?`<div style="margin-bottom:8px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Locataire actuel</div>${locActifs.map(l=>`<div class="tenant-row"><div class="tenant-status actif"></div><span style="font-weight:500;color:var(--text)">${esc(l.nom)}</span><span style="color:var(--text3);font-size:11px">Depuis ${esc(l.entree)}</span><span class="badge badge-green" style="margin-left:auto">${fmt(l.loyer)}/m</span><span style="color:var(--text3);font-size:11px;margin-left:8px">Caution: ${fmt(l.caution)}</span></div>`).join('')}</div>`:''}
+      ${locHisto.length?`<div><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Anciens locataires (${locHisto.length})</div>${locHisto.slice(-2).map(l=>`<div class="tenant-row" style="opacity:.6"><div class="tenant-status parti"></div><span style="color:var(--text2)">${esc(l.nom)}</span><span style="color:var(--text3);font-size:11px">${esc(l.entree)} → ${esc(l.sortie)}</span></div>`).join('')}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -257,10 +257,10 @@ function renderLocatairesTable() {
   state.immoBiens.forEach(b=>bienMap[b.id]=b.label);
   tbody.innerHTML = state.locataires.length
     ? [...state.locataires].sort((a,b)=>b.entree.localeCompare(a.entree)).map(l=>`<tr>
-        <td class="highlight">${bienMap[l.bienId]||'—'}</td>
-        <td class="highlight">${l.nom}</td>
-        <td>${l.entree||'—'}</td>
-        <td ${!l.sortie?'class="green"':''}>${l.sortie||'En cours'}</td>
+        <td class="highlight">${esc(bienMap[l.bienId]||'—')}</td>
+        <td class="highlight">${esc(l.nom)}</td>
+        <td>${esc(l.entree||'—')}</td>
+        <td ${!l.sortie?'class="green"':''}>${esc(l.sortie||'En cours')}</td>
         <td class="gold">${fmt(l.loyer)}/mois</td>
         <td>${fmt(l.caution)}</td>
         <td><span class="badge ${l.sortie?'badge-gray':'badge-green'}">${l.sortie?'Parti':'Actif'}</span></td>
@@ -277,12 +277,12 @@ function renderChargesTable() {
   const freqMens = {mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
   tbody.innerHTML = state.charges.length
     ? [...state.charges].sort((a,b)=>a.bienId.localeCompare(b.bienId)).map(c=>`<tr>
-        <td class="highlight">${bienMap[c.bienId]||'—'}</td>
-        <td>${CHARGE_ICONS[c.type]||'📦'} ${c.label}</td>
+        <td class="highlight">${esc(bienMap[c.bienId]||'—')}</td>
+        <td>${CHARGE_ICONS[c.type]||'📦'} ${esc(c.label)}</td>
         <td class="red">${fmt(c.montant)}</td>
-        <td><span class="badge badge-gray">${freqLabel[c.freq]||c.freq}</span></td>
+        <td><span class="badge badge-gray">${esc(freqLabel[c.freq]||c.freq)}</span></td>
         <td class="gold">${fmt(c.montant*(freqMens[c.freq]||0))}/m</td>
-        <td style="color:var(--text3)">${c.date||'—'}</td>
+        <td style="color:var(--text3)">${esc(c.date||'—')}</td>
         <td><button class="icon-btn del" onclick="deleteCharge('${c.id}')">✕</button></td>
       </tr>`).join('')
     : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Aucune charge enregistrée</td></tr>';
@@ -332,7 +332,7 @@ function renderRendement() {
     const roiColor = roiAnnuel>=0?'var(--green)':'var(--red)';
     return `<div class="card" style="margin-bottom:20px">
       <div class="card-header">
-        <span style="font-family:var(--font-display);font-size:18px;color:var(--gold)">📊 ${b.label}</span>
+        <span style="font-family:var(--font-display);font-size:18px;color:var(--gold)">📊 ${esc(b.label)}</span>
         <span class="badge badge-gray">${getFiscalLabel(b.fiscal)}</span>
       </div>
 
@@ -380,7 +380,7 @@ function renderRendement() {
             state.charges.filter(c=>c.bienId===b.id).map(c=>{
               const freqMens={mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
               const annuel = c.montant*(freqMens[c.freq]||0)*12;
-              return `<div class="alloc-row"><span style="color:var(--text3);font-size:12px">${CHARGE_ICONS[c.type]||'📦'} ${c.label}</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(annuel)}/an</span></div>`;
+              return `<div class="alloc-row"><span style="color:var(--text3);font-size:12px">${CHARGE_ICONS[c.type]||'📦'} ${esc(c.label)}</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(annuel)}/an</span></div>`;
             }).join('')+'<div class="alloc-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:8px"><span style="font-weight:500">Total charges annuelles</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(chargesM*12)}</span></div>'
             :'<div style="color:var(--text3);font-size:12px;padding:8px">Aucune charge enregistrée pour ce bien.</div>'
           }

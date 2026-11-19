@@ -13,7 +13,7 @@ const TTF_RATE = 0.004; // Taxe sur les Transactions Financières (actions FR > 
 let peaExpanded = new Set(); // positions dépliées (niveau 2)
 
 function compteTypeLabel(t) {
-  return {PEA:'PEA', 'PEA-PME':'PEA-PME', CTO:'CTO'}[t]||t;
+  return {PEA:'PEA', 'PEA-PME':'PEA-PME', CTO:'CTO'}[t]||esc(t);
 }
 
 // ── Accès tolérants (une ancienne ligne sans `achats` reste lisible avant migration) ──
@@ -81,7 +81,7 @@ function togglePcPlafondField() {
 function populatePeaCompteSelect() {
   const sel = document.getElementById('ptCompteId');
   if (!sel) return;
-  sel.innerHTML = state.peaComptes.map(c=>`<option value="${c.id}">${c.nom} (${compteTypeLabel(c.type)})</option>`).join('')
+  sel.innerHTML = state.peaComptes.map(c=>`<option value="${c.id}">${esc(c.nom)} (${compteTypeLabel(c.type)})</option>`).join('')
     || '<option value="">— Aucun compte —</option>';
 }
 
@@ -355,7 +355,7 @@ function renderPeaAchatsDetail(r) {
   const mono = 'font-family:var(--font-mono)';
   const lignes = r.achats.map(x=>`
     <tr>
-      <td>${x.a.date||'—'}</td>
+      <td>${esc(x.a.date||'—')}</td>
       <td style="${mono}">${fmtQte(x.a.quantite)}</td>
       <td style="${mono}">${fmt(x.a.prix)}</td>
       <td style="${mono};color:var(--red)">${fmt(x.courtage)}</td>
@@ -373,7 +373,7 @@ function renderPeaAchatsDetail(r) {
   return `<tr><td colspan="13" style="padding:4px 12px 14px;background:transparent">
     <div style="background:var(--bg4);border-radius:8px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span class="card-title">Achats — ${t.nom} (${r.achats.length})</span>
+        <span class="card-title">Achats — ${esc(t.nom)} (${r.achats.length})</span>
         <button class="btn btn-gold" style="padding:6px 12px;font-size:10px" onclick="openAddPeaAchat('${t.id}')">+ Achat</button>
       </div>
       <div class="table-wrap"><table>
@@ -404,7 +404,7 @@ function renderPeaComptesList() {
       return `
       <tr style="cursor:pointer" onclick="togglePeaPosition('${r.t.id}')" title="Cliquer pour voir / ajouter des achats">
         <td style="width:22px;color:var(--text3)">${open?'▾':'▸'}</td>
-        <td class="highlight">${r.t.nom}<div style="font-family:var(--font-mono);font-size:9px;color:var(--text3)">${r.t.ticker?r.t.ticker+' · ':''}${r.t.devise!=='EUR'?r.t.devise+' · ':''}${r.achats.length} achat${r.achats.length>1?'s':''}</div></td>
+        <td class="highlight">${esc(r.t.nom)}<div style="font-family:var(--font-mono);font-size:9px;color:var(--text3)">${r.t.ticker?esc(r.t.ticker)+' · ':''}${r.t.devise!=='EUR'?esc(r.t.devise)+' · ':''}${r.achats.length} achat${r.achats.length>1?'s':''}</div></td>
         <td style="${mono}">${fmtQte(r.quantite)}</td>
         <td style="${mono}">${fmt(r.pruBrut)}</td>
         <td style="${mono};color:var(--gold)" title="Courtage ${fmt(r.fraisCourtage)} + Change ${fmt(r.fxFrais)} + TTF ${fmt(r.ttfFrais)}">${fmt(r.pruNet)}</td>
@@ -427,8 +427,8 @@ function renderPeaComptesList() {
     return `<div class="immo-card">
       <div class="immo-card-header">
         <div>
-          <div class="immo-prop-title">💼 ${c.nom} <span class="badge ${c.type==='CTO'?'badge-blue':'badge-gold'}" style="margin-left:6px">${compteTypeLabel(c.type)}</span></div>
-          ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">🏦 ${c.banque} · Courtage ${fmtPct(c.courtagePct||0)} · Garde ${fmtPct(c.gardePct||0)}/an</div>`:''}
+          <div class="immo-prop-title">💼 ${esc(c.nom)} <span class="badge ${c.type==='CTO'?'badge-blue':'badge-gold'}" style="margin-left:6px">${compteTypeLabel(c.type)}</span></div>
+          ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px">🏦 ${esc(c.banque)} · Courtage ${fmtPct(c.courtagePct||0)} · Garde ${fmtPct(c.gardePct||0)}/an</div>`:''}
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn" style="padding:6px 12px;font-size:10px" onclick="openAddPeaTitre('${c.id}')">+ Position</button>
@@ -489,14 +489,14 @@ function renderPeaPortefeuille() {
   }
   document.getElementById('peaTitresList').innerHTML = rows.length ? rows.map((r,i)=>`
     <div class="alloc-row">
-      <div><span class="alloc-dot" style="background:${palette[i%palette.length]}"></span>${r.t.nom}</div>
+      <div><span class="alloc-dot" style="background:${palette[i%palette.length]}"></span>${esc(r.t.nom)}</div>
       <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(totalValeur>0?r.valeur/totalValeur*100:0,0)} <span style="color:var(--text3);margin-left:8px">${fmt(r.valeur)}</span></div>
     </div>`).join('') : '<div style="color:var(--text3);font-size:13px">Aucune position</div>';
 
   document.getElementById('peaTitresBreakdown').innerHTML = rows.length ? rows.map(r=>`
     <div class="alloc-row">
       <div>
-        <div style="color:var(--text)">${r.t.nom}</div>
+        <div style="color:var(--text)">${esc(r.t.nom)}</div>
         <div style="color:var(--text3);font-family:var(--font-mono);font-size:10px">${fmtQte(r.quantite)} × ${fmt(r.coursActuel)}</div>
       </div>
       <div style="text-align:right">
@@ -524,7 +524,7 @@ function renderInvAv() {
   tbody.innerHTML = items.length ? items.map(a=>{
     const rNet = taxNet(a.taux||0, a.fiscal||'exonere');
     return `<tr>
-      <td class="highlight">${a.label}</td>
+      <td class="highlight">${esc(a.label)}</td>
       <td class="gold">${fmt(a.valeur)}</td>
       <td style="color:var(--green);font-family:var(--font-mono)">${a.mensuel>0?'+'+fmt(a.mensuel)+'/m':'—'}</td>
       <td>${fmtPct(a.taux||0)}</td>

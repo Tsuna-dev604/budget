@@ -90,6 +90,7 @@ Le projet est un site statique : GitHub Pages, Netlify, Vercel ou Cloudflare Pag
 ```
 index.html            Page unique : structure, modales
 css/style.css         Styles, thèmes clair et sombre
+vendor/               Chart.js et supabase-js hébergés localement (versions figées, voir vendor/README.md)
 js/
   config.js           Connexion Supabase (seul fichier à adapter)
   state.js            Structure des données et état par défaut
@@ -109,7 +110,7 @@ js/
   simulations.js      Simulations
   objectifs.js        Objectifs
   import-csv.js       Import CSV de relevés
-  import-export.js    Export et import JSON
+  import-export.js    Export / import JSON avec empreinte SHA-256 et validation du schéma
   demo-data.js        Données de démonstration
   nav.js, theme.js    Navigation latérale, thème
   main.js             Initialisation
@@ -121,8 +122,13 @@ Les scripts sont chargés dans l'ordre de `index.html` et partagent un état glo
 
 - Les données sont enregistrées dans votre projet Supabase, sous votre compte.
 - **Export / import JSON** (Paramètres) : pensez à sauvegarder régulièrement.
+  - Le fichier exporté est une enveloppe `{app, schemaVersion, exportedAt, counts, checksum, data}` ; `checksum` est l'empreinte SHA-256 de `data` (JSON canonique, clés triées). Une modification manuelle du fichier est détectée et l'import est refusé.
+  - La clé Alpha Vantage n'est jamais écrite dans l'export ; à l'import, la clé locale est conservée.
+  - L'import vérifie la taille (≤ 20 Mo), la version de schéma, l'empreinte, la forme des données (types, énumérations, identifiants `[A-Za-z0-9_.-]{1,64}`), demande confirmation avec un récapitulatif, puis **télécharge automatiquement une sauvegarde de l'état actuel** avant de le remplacer. Les clés inconnues sont ignorées.
+  - Les anciens exports (JSON brut, sans empreinte) restent importables, avec un avertissement.
 - Si le chargement cloud échoue, la synchronisation est suspendue pour ne pas écraser vos données par un état vide.
 - L'import CSV est traité **dans le navigateur** : le fichier n'est envoyé à aucun service. Les libellés importés sont nettoyés et échappés à l'affichage.
+- **Content-Security-Policy** (balise `<meta>` de `index.html`) : scripts uniquement depuis l'origine du site, connexions limitées à votre projet Supabase et à Alpha Vantage. Si vous changez d'URL Supabase dans `js/config.js`, mettez aussi à jour `connect-src` dans cette balise. `'unsafe-inline'` reste nécessaire tant que des gestionnaires `onclick="…"` existent : la CSP est une défense en profondeur, la protection principale est l'échappement (`esc()`) et la validation des identifiants à l'import.
 - Les appels de cours ne transmettent que le symbole du titre et votre clé Alpha Vantage.
 
 ## Limites connues

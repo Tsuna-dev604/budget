@@ -138,10 +138,10 @@ function renderBudgetTable() {
   tbody.innerHTML = items.sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`
     <tr>
       <td>${b.type==='depense'?`<input type="checkbox" class="budget-check" data-id="${b.id}" ${checkedDepenseIds.has(b.id)?'checked':''} onchange="toggleDepenseCheck('${b.id}', this.checked)">`:''}</td>
-      <td class="highlight">${b.date}</td>
+      <td class="highlight">${esc(b.date)}</td>
       <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${esc(b.label)}</td>
       <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
-      <td>${b.compteId?`<span class="badge badge-blue">${compteLabel(b.compteId)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${b.compteId?`<span class="badge badge-blue">${esc(compteLabel(b.compteId))}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
       <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':b.type==='virement'?'<span class="badge badge-blue">Épargne</span>':'<span class="badge badge-red">Dépense</span>'}</td>
       <td class="${b.type==='revenu'?'green':b.type==='virement'?'blue':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
       <td><div class="row-actions">
@@ -290,8 +290,8 @@ function renderPrevisionWidget() {
     }).sort((a,b)=>b.ecart-a.ecart);
     tbody.innerHTML = rows.map(r=>`
       <tr>
-        <td class="highlight"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${r.c}</td>
-        <td><input type="number" min="0" step="1" value="${r.prevu||''}" placeholder="0" style="width:110px;padding:6px 10px;font-size:12px" onchange="updatePrevision('${r.c}', this.value)"></td>
+        <td class="highlight"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${esc(r.c)}</td>
+        <td><input type="number" min="0" step="1" value="${r.prevu||''}" placeholder="0" style="width:110px;padding:6px 10px;font-size:12px" data-categ="${esc(r.c)}" onchange="updatePrevision(this.dataset.categ, this.value)"></td>
         <td class="gold">${fmt(r.reel)}</td>
         <td class="${r.ecart>0?'red':'green'}">${r.ecart>0?'+':''}${fmt(r.ecart)}</td>
       </tr>`).join('');
@@ -338,7 +338,7 @@ function detectAnomalies() {
       const moyenne = total/count;
       if (moyenne>0 && montant > moyenne*1.3) {
         const pct = (montant/moyenne-1)*100;
-        anomalies.push({sev:pct, icon:'⚠', text:`Dépenses « ${categ} » supérieures de ${fmtPct(pct,0)} à la moyenne des ${count} derniers mois actifs (moyenne : ${fmt(moyenne)}).`});
+        anomalies.push({sev:pct, icon:'⚠', text:`Dépenses « ${esc(categ)} » supérieures de ${fmtPct(pct,0)} à la moyenne des ${count} derniers mois actifs (moyenne : ${fmt(moyenne)}).`});
       }
     }
   });
@@ -354,7 +354,7 @@ function detectAnomalies() {
     if (hist.length>=3) {
       const moy = hist.reduce((a,v)=>a+v,0)/hist.length;
       if (moy>0 && b.montant > moy*2.5 && b.montant>=100) {
-        anomalies.push({sev:(b.montant/moy)*150, icon:'🔴', text:`Dépense inhabituelle détectée : ${fmt(b.montant)} pour « ${esc(b.label)} » (${esc(categ)}, ${b.date}) — nettement au-dessus de vos dépenses habituelles dans cette catégorie (moyenne : ${fmt(moy)}).`});
+        anomalies.push({sev:(b.montant/moy)*150, icon:'🔴', text:`Dépense inhabituelle détectée : ${fmt(b.montant)} pour « ${esc(b.label)} » (${esc(categ)}, ${esc(b.date)}) — nettement au-dessus de vos dépenses habituelles dans cette catégorie (moyenne : ${fmt(moy)}).`});
       }
     }
   });
@@ -456,7 +456,7 @@ function renderEvolutionCategories() {
     <thead><tr><th>Catégorie</th>${labels.map(th).join('')}${th('Moy./mois')}${th('Tendance')}</tr></thead>
     <tbody>
       ${rows.map(r=>`<tr>
-        <td class="highlight" style="white-space:nowrap"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${r.c}</td>
+        <td class="highlight" style="white-space:nowrap"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${esc(r.c)}</td>
         ${r.vals.map(v=>`<td style="${mono}">${v>0?fmt(v,0):'<span style="color:var(--text3)">—</span>'}</td>`).join('')}
         <td style="${mono};color:var(--gold)">${r.moyenne!==null?fmt(r.moyenne,0):'—'}</td>
         <td style="${mono};color:${r.tendance===null?'var(--text3)':(r.tendance>0?'var(--red)':'var(--green)')}">${r.tendance===null?'—':(r.tendance>0?'▲ +':'▼ ')+fmtPct(r.tendance,0)}</td>

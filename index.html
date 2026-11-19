@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Content-Security-Policy : limite les destinations réseau (connect-src) et les sources de scripts.
+     'unsafe-inline' reste nécessaire pour les onclick="…" et le script anti-flash du thème : la CSP est donc une
+     défense en profondeur (elle bloque l'exfiltration vers un domaine tiers et tout script externe), pas une garantie
+     contre l'injection HTML — celle-ci est traitée par l'échappement (esc()). Si l'URL du projet Supabase change
+     (js/config.js), mettre à jour connect-src. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://ebdnlakdfwqbkwakzmbv.supabase.co https://www.alphavantage.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Gestion Patrimoine & Immobilier</title>
 <!-- Anti-flash thème : pose data-theme / sidebar-collapsed avant le premier paint -->
 <script>
@@ -15,8 +21,8 @@
   } catch(e) {}
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="vendor/chart-4.4.1.umd.js"></script>
+<script src="vendor/supabase-js-2.119.2.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -722,7 +728,8 @@
         </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Sauvegarde locale</span></div>
-          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Vos données sont synchronisées automatiquement sur Supabase. Cette sauvegarde JSON locale sert de filet de secours.</p>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Vos données sont synchronisées automatiquement sur Supabase. Cette sauvegarde JSON locale sert de filet de secours : le fichier contient une empreinte SHA-256 qui permet de détecter toute corruption ou modification à l'import. La clé API n'y figure pas.</p>
+          <p id="lastExportInfo" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:14px"></p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn" onclick="exportData()">↓ Exporter (JSON)</button>
             <button class="btn" onclick="document.getElementById('importFile').click()">↑ Importer un fichier JSON</button>

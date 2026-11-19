@@ -37,7 +37,7 @@ function renderLiquiditesLegend() {
   legendWrap.innerHTML = state.comptes.map((c,i)=>`
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-mono);font-size:11px">
       <input type="checkbox" style="width:auto" ${liquiditesComptesVisibles.has(c.id)?'checked':''} onchange="toggleLiquiditeCompte('${c.id}', this.checked)">
-      <span style="color:${LIQ_PALETTE[i%LIQ_PALETTE.length]}">● ${c.label}</span>
+      <span style="color:${LIQ_PALETTE[i%LIQ_PALETTE.length]}">● ${esc(c.label)}</span>
     </label>`).join('');
 }
 
