@@ -12,11 +12,11 @@ function toggleObjectifSourceFields() {
   document.getElementById('oManuelWrap').style.display = source==='manuel' ? 'block' : 'none';
   if (source==='compte') {
     const sel = document.getElementById('oCompteId');
-    sel.innerHTML = state.comptes.map(c=>`<option value="${c.id}">${c.label}</option>`).join('') || '<option value="">— Aucun compte —</option>';
+    sel.innerHTML = state.comptes.map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join('') || '<option value="">— Aucun compte —</option>';
   }
   if (source==='actif') {
     const sel = document.getElementById('oActifId');
-    sel.innerHTML = state.actifs.map(a=>`<option value="${a.id}">${a.label}</option>`).join('') || '<option value="">— Aucun actif —</option>';
+    sel.innerHTML = state.actifs.map(a=>`<option value="${a.id}">${esc(a.label)}</option>`).join('') || '<option value="">— Aucun actif —</option>';
   }
 }
 function openAddObjectif() {
@@ -129,9 +129,9 @@ function renderObjectifs() {
 
     return `<div class="card">
       <div class="card-header">
-        <span class="card-title">${o.label}</span>
+        <span class="card-title">${esc(o.label)}</span>
         <div style="display:flex;gap:6px;align-items:center">
-          <span class="badge badge-blue">${OBJECTIF_SOURCE_LABELS[o.source]}${compteNom?' — '+compteNom:''}</span>
+          <span class="badge badge-blue">${esc(OBJECTIF_SOURCE_LABELS[o.source]||'')}${compteNom?' — '+esc(compteNom):''}</span>
           <button class="icon-btn" onclick="openEditObjectif('${o.id}')" title="Modifier">✎</button>
           <button class="icon-btn del" onclick="deleteObjectif('${o.id}')" title="Supprimer">✕</button>
         </div>

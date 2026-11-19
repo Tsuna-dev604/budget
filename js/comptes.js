@@ -106,13 +106,13 @@ function renderComptes() {
     const vir = state.budget.filter(b=>b.compteId===c.id&&b.type==='virement').reduce((s,b)=>s+b.montant,0);
     return `<div class="card">
       <div class="card-header">
-        <span class="card-title">🏦 ${c.label}</span>
+        <span class="card-title">🏦 ${esc(c.label)}</span>
         <div class="row-actions">
           <button class="icon-btn" onclick="openEditCompte('${c.id}')" title="Modifier">✎</button>
           <button class="icon-btn del" onclick="deleteCompte('${c.id}')" title="Supprimer">✕</button>
         </div>
       </div>
-      ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">${c.banque}</div>`:''}
+      ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">${esc(c.banque)}</div>`:''}
       <div class="card-value ${solde<0?'red':'gold'}">${fmt(solde)}</div>
       <div class="card-sub">Solde actuel · initial ${fmt(c.soldeInitial||0)}</div>
       <hr class="divider">
