@@ -1,0 +1,52 @@
+---
+title: 2 · Budget et comptes
+---
+classDiagram
+direction LR
+class Compte {
+  +id : Id
+  +nom : string
+  +banque : string
+  +soldeInitial : Money
+}
+class Operation {
+  +id : Id
+  +date : Date
+  +libelle : string
+  +categorie : Categorie
+  +montant : Money
+  +type : TypeOperation
+  +compteId : Id?
+  +recurrenceId : Id?
+  +versementActifId : Id?
+  +mois : YearMonth?
+}
+class TypeOperation {
+  <<enumeration>>
+  Depense
+  Revenu
+  Virement
+}
+class OperationRecurrente {
+  +id : Id
+  +libelle : string
+  +type : TypeOperation
+  +montant : Money
+  +jour : int
+  +categorie : Categorie
+  +compteId : Id?
+  +depuis : YearMonth
+  +dernierMoisApplique : YearMonth?
+}
+class RegleCategorisation {
+  +id : Id
+  +motif : string
+  +type : TypeOperation
+  +categorie : Categorie
+}
+Compte "0..1" <-- "0..*" Operation : compteId
+OperationRecurrente "0..1" <-- "0..*" Operation : recurrenceId
+OperationRecurrente "0..*" --> "0..1" Compte : compteId
+Operation --> TypeOperation
+note for Operation "Virement = changement de poche :<br/>ne compte ni en dépense ni en revenu.<br/>versementActifId + mois = idempotence<br/>des virements programmés."
+note for Compte "Solde = soldeInitial + Σ opérations<br/>(calculé par BudgetService, jamais stocké)."

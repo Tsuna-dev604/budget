@@ -1,0 +1,73 @@
+---
+title: 4 · Services, persistance, infrastructure
+---
+classDiagram
+direction LR
+class Portefeuille
+class BudgetService {
+  +solde(Compte) Money
+  +totauxMois(YearMonth) TotauxMois
+  +anomalies() vector~Anomalie~
+  +tauxEpargne(YearMonth) double
+}
+class PatrimoineService {
+  +valeurNette(Date) Money
+  +repartition() vector~Part~
+  +snapshot(Date) PointPatrimoine
+}
+class AmortissementService {
+  +capitalRestant(Passif, Date) Money
+  +tableau(Passif) vector~Echeance~
+}
+class SyncEcheancesService {
+  +appliquerRecurrents(Date) RapportSync
+  +appliquerVirements(Date) RapportSync
+  +amortirCredits(Date) RapportSync
+}
+class SimulationService {
+  +projeter(ParamsProjection) vector~PointProjection~
+  +pea(ParamsPea) ResultatPea
+}
+class CsvImporter {
+  +analyser(flux) vector~OperationCandidate~
+  +appliquer(candidats) int
+}
+class PortefeuilleRepository {
+  <<interface>>
+  +charger() Portefeuille
+  +sauver(Portefeuille)
+}
+class JsonFileRepository
+class SqliteRepository
+class ExportImportService {
+  +exporter(Portefeuille) Enveloppe
+  +importer(texte) ResultatImport
+  -sha256(canonicalJson) string
+  -valider(Portefeuille) vector~Erreur~
+}
+class MarketDataClient {
+  <<interface>>
+  +cours(ticker) optional~Money~
+}
+class AlphaVantageClient
+class Horloge {
+  <<interface>>
+  +aujourdhui() Date
+}
+BudgetService ..> Portefeuille
+PatrimoineService ..> Portefeuille
+PatrimoineService ..> AmortissementService
+SyncEcheancesService ..> Portefeuille
+SyncEcheancesService ..> Horloge
+SyncEcheancesService ..> AmortissementService
+SimulationService ..> PatrimoineService
+CsvImporter ..> Portefeuille
+ExportImportService ..> Portefeuille
+ExportImportService ..> PortefeuilleRepository
+PortefeuilleRepository <|.. JsonFileRepository
+PortefeuilleRepository <|.. SqliteRepository
+MarketDataClient <|.. AlphaVantageClient
+PatrimoineService ..> MarketDataClient : cours des titres
+note for SyncEcheancesService "Idempotent : rejouable sans doublon<br/>(dernierMois / recurrenceId + mois).<br/>Horloge injectée = tests déterministes."
+note for ExportImportService "Même format que la version web :<br/>enveloppe {app, schemaVersion, checksum, data}<br/>+ sauvegarde avant remplacement."
+note for JsonFileRepository "Local-first : fichier JSON (comme l'export),<br/>SQLite possible plus tard sans toucher au domaine."

@@ -1,0 +1,131 @@
+---
+title: 3 · Patrimoine, immobilier, investissement, objectifs
+---
+classDiagram
+direction TB
+class Valorisable {
+  <<interface>>
+  +valeur() Money
+  +libelle() string
+}
+class Actif {
+  +id : Id
+  +libelle : string
+  +categorie : CategorieActif
+  +valeur : Money
+  +regimeFiscal : string
+  +virement : VirementProgramme?
+  +physique : DetailPhysique?
+}
+class CategorieActif {
+  <<enumeration>>
+  Liquide
+  SemiLiquide
+  Physique
+}
+class VirementProgramme {
+  <<value>>
+  +montant : Money
+  +jour : int
+  +compteSourceId : Id?
+  +dernierMois : YearMonth?
+}
+class DetailPhysique {
+  <<value>>
+  +sousType : string
+  +prixAchat : Money
+  +evolutionAnnuelle : double
+}
+class Passif {
+  +id : Id
+  +libelle : string
+  +capitalRestant : Money
+  +mensualite : Money
+  +taux : double
+  +echeance : Date?
+  +jour : int
+}
+class BienImmobilier {
+  +id : Id
+  +libelle : string
+  +adresse : string
+  +valeur : Money
+  +prixAcquisition : Money
+  +loyerCible : Money
+  +appreciation : double
+  +regimeFiscal : string
+  +passifId : Id?
+}
+class Locataire {
+  +id : Id
+  +bienId : Id
+  +nom : string
+  +entree : Date
+  +sortie : Date?
+  +loyer : Money
+  +caution : Money
+}
+class ChargeImmobiliere {
+  +id : Id
+  +bienId : Id
+  +libelle : string
+  +montant : Money
+  +frequence : string
+  +date : Date
+}
+class CompteTitres {
+  +id : Id
+  +type : TypeEnveloppe
+  +nom : string
+  +banque : string
+  +plafond : Money
+  +courtagePct : double
+  +gardePct : double
+}
+class Titre {
+  +id : Id
+  +compteId : Id
+  +nom : string
+  +ticker : string
+  +devise : string
+  +ter : double
+  +ttf : bool
+  +cours : Money
+}
+class Achat {
+  <<value>>
+  +date : Date
+  +quantite : double
+  +prixUnitaire : Money
+  +frais : Money
+  +fraisChangePct : double
+}
+class Objectif {
+  +id : Id
+  +libelle : string
+  +source : SourceObjectif
+  +cible : Money
+  +echeance : YearMonth?
+  +refId : Id?
+}
+class SourceObjectif {
+  <<enumeration>>
+  Compte
+  Actif
+  Titres
+}
+Valorisable <|.. Actif
+Valorisable <|.. BienImmobilier
+Valorisable <|.. Titre
+Actif --> CategorieActif
+Actif *-- "0..1" VirementProgramme
+Actif *-- "0..1" DetailPhysique
+BienImmobilier "1" <-- "0..*" Locataire : bienId
+BienImmobilier "1" <-- "0..*" ChargeImmobiliere : bienId
+BienImmobilier "0..1" --> "0..1" Passif : passifId
+CompteTitres "1" <-- "0..*" Titre : compteId
+Titre *-- "1..*" Achat
+Objectif ..> Actif : refId (selon source)
+Objectif --> SourceObjectif
+note for Valorisable "Le patrimoine net = Σ Valorisable − Σ Passif.<br/>Un bien n'est PAS recopié en Actif :<br/>plus de double saisie ni de synchro."
+note for Actif "Le virement programmé est un objet valeur<br/>de l'actif cible (livret, PEL, AV...)."

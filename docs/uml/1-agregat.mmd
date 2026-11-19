@@ -1,0 +1,63 @@
+---
+title: 1 · Agrégat racine et types valeur
+---
+classDiagram
+direction LR
+class Portefeuille {
+  +schemaVersion : int
+  +comptes : vector~Compte~
+  +operations : vector~Operation~
+  +recurrents : vector~OperationRecurrente~
+  +reglesCategorisation : vector~RegleCategorisation~
+  +budgetPrevisionnel : map~Categorie, Money~
+  +actifs : vector~Actif~
+  +passifs : vector~Passif~
+  +biens : vector~BienImmobilier~
+  +locataires : vector~Locataire~
+  +charges : vector~ChargeImmobiliere~
+  +comptesTitres : vector~CompteTitres~
+  +objectifs : vector~Objectif~
+  +historiqueValeurs : vector~PointValeur~
+  +historiquePatrimoine : vector~PointPatrimoine~
+  +parametres : Parametres
+}
+class Money {
+  <<value>>
+  -centimes : int64
+  +fromDecimal(double) Money
+  +operator+ operator-
+  +mulRatio(num, den) Money
+  +toString() string
+}
+class Id {
+  <<value>>
+  -valeur : string
+  +valide() bool
+}
+class Categorie {
+  <<value>>
+  +nom : string
+  +type : TypeOperation
+}
+class Parametres {
+  <<value>>
+  +apiKeyMarche : string
+  +cacheTtlMin : int
+}
+class PointValeur {
+  <<value>>
+  +refId : Id
+  +date : Date
+  +valeur : Money
+}
+class PointPatrimoine {
+  <<value>>
+  +date : Date
+  +actifs : Money
+  +passifs : Money
+}
+Portefeuille *-- Parametres
+Portefeuille *-- PointValeur
+Portefeuille *-- PointPatrimoine
+note for Portefeuille "Seul propriétaire des données.<br/>Les entités se référencent par Id (jamais de pointeur croisé) :<br/>sérialisation JSON directe, pas de cycle."
+note for Money "Pas de Decimal en C++ : entier en centimes,<br/>arrondi explicite (au plus proche)."
