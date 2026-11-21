@@ -110,11 +110,21 @@ function renderPatrimoineChart() {
 
 // ── Ligne 3 : où est mon argent (allocation factuelle, sans score) ──
 function renderAllocationWidget() {
-  const {groups, total} = getAllocationClasses();
-  const CAT_LABELS = {liquide:'Liquidités',semiliquide:'Financier',immobilier:'Immobilier',physique:'Physique'};
-  const CAT_COLORS = {liquide:'#22c55e',semiliquide:'#5b8def',immobilier:'#3b82f6',physique:'#8b7cf6'};
-  const labels=[], vals=[], bgs=[];
-  Object.entries(groups).forEach(([k,v])=>{ if (v>0) { labels.push(CAT_LABELS[k]); vals.push(v); bgs.push(CAT_COLORS[k]); } });
+  // Les biens physiques sont exclus de cette vue (« argent en banque ») et affichés dans leur propre carte.
+  const {groups: allGroups} = getAllocationClasses();
+  const {physique, ...groups} = allGroups;
+  const total = Object.values(groups).reduce((a,v)=>a+v,0);
+  const pea = getTotalPeaPortefeuille();
+  const CAT_LABELS = {liquide:'Liquidités',semiliquide:'Financier (PEA/CTO, AV…)',immobilier:'Immobilier'};
+  const CAT_COLORS = {liquide:'#22c55e',semiliquide:'#5b8def',immobilier:'#3b82f6'};
+  const labels=[], vals=[], bgs=[], notes=[];
+  Object.entries(groups).forEach(([k,v])=>{
+    if (v>0) {
+      labels.push(CAT_LABELS[k]); vals.push(v); bgs.push(CAT_COLORS[k]);
+      notes.push(k==='semiliquide' && pea>0 ? `dont PEA/CTO : ${fmt(pea)}` : '');
+    }
+  });
+  renderPhysiquesWidget(physique);
 
   if (chartAlloc) { chartAlloc.destroy(); chartAlloc=null; }
   if (vals.length>0) {
@@ -126,9 +136,26 @@ function renderAllocationWidget() {
   }
   document.getElementById('allocList').innerHTML = labels.map((l,i)=>`
     <div class="alloc-row">
-      <div><span class="alloc-dot" style="background:${bgs[i]}"></span>${l}</div>
+      <div><span class="alloc-dot" style="background:${bgs[i]}"></span>${l}${notes[i]?`<div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin:2px 0 0 18px">${notes[i]}</div>`:''}</div>
       <div style="font-family:var(--font-mono);font-size:12px">${fmtPct(total>0?vals[i]/total*100:0,0)} <span style="color:var(--text3);margin-left:8px">${fmt(vals[i])}</span></div>
     </div>`).join('') || '<div style="color:var(--text3);font-size:13px">Aucun actif enregistré</div>';
+}
+
+// Carte séparée : biens physiques (montres, art, voitures…), non comptés dans « Où est mon argent ? ».
+function renderPhysiquesWidget(totalPhysique) {
+  const el = document.getElementById('physiquesWidget');
+  if (!el) return;
+  const items = state.actifs.filter(a=>a.category==='physique').sort((a,b)=>(b.valeur||0)-(a.valeur||0));
+  if (!items.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px">Aucun bien physique enregistré</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-family:var(--font-display);font-size:24px;color:var(--purple);margin-bottom:8px">${fmt(totalPhysique)}</div>
+    ${items.map(a=>`<div class="alloc-row">
+      <div>${SUBTYPE_ICONS[a.subtype]||'📦'} ${esc(a.label)}</div>
+      <div style="font-family:var(--font-mono);font-size:12px">${fmt(a.valeur||0)}</div>
+    </div>`).join('')}`;
 }
 
 // ── Ligne 3 (suite) : où va mon argent (dépenses du mois/trimestre/année) ──
