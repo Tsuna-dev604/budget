@@ -115,8 +115,9 @@ function renderBudgetTable() {
   if (type!=='all') items = items.filter(b=>b.type===type);
 
   // Un virement d'épargne n'est ni un revenu ni une dépense : il est exclu du solde net et du taux d'épargne.
+  // Les opérations des comptes « hors budget » restent listées (grisées) mais ne sont pas totalisées.
   let rev=0, dep=0, vir=0;
-  items.forEach(b=>{if(b.type==='revenu')rev+=b.montant;else if(b.type==='virement')vir+=b.montant;else dep+=b.montant;});
+  items.filter(b=>compteDansBudget(b.compteId)).forEach(b=>{if(b.type==='revenu')rev+=b.montant;else if(b.type==='virement')vir+=b.montant;else dep+=b.montant;});
   document.getElementById('bRevenu').textContent = fmt(rev);
   document.getElementById('bDepense').textContent = fmt(dep);
   const solde = rev-dep;
@@ -136,12 +137,12 @@ function renderBudgetTable() {
 
   const tbody = document.getElementById('budgetTbody');
   tbody.innerHTML = items.sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`
-    <tr>
+    <tr${compteDansBudget(b.compteId)?'':' style="opacity:.55" title="Compte hors budget : non compté dans les totaux"'}>
       <td>${b.type==='depense'?`<input type="checkbox" class="budget-check" data-id="${b.id}" ${checkedDepenseIds.has(b.id)?'checked':''} onchange="toggleDepenseCheck('${b.id}', this.checked)">`:''}</td>
       <td class="highlight">${esc(b.date)}</td>
       <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${esc(b.label)}</td>
       <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
-      <td>${b.compteId?`<span class="badge badge-blue">${esc(compteLabel(b.compteId))}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${b.compteId?`<span class="badge badge-blue">${esc(compteLabel(b.compteId))}</span>${compteDansBudget(b.compteId)?'':' <span class="badge">hors budget</span>'}`:'<span style="color:var(--text3)">—</span>'}</td>
       <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':b.type==='virement'?'<span class="badge badge-blue">Épargne</span>':'<span class="badge badge-red">Dépense</span>'}</td>
       <td class="${b.type==='revenu'?'green':b.type==='virement'?'blue':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
       <td><div class="row-actions">
@@ -216,7 +217,7 @@ function getReferenceYearMonth() {
   // inclurait les échéances de salaire récurrent auto-générées jusqu'à fin d'année).
   if (year === String(now.getFullYear())) return currentYm;
   // Année différente : dernier mois avec des dépenses réelles enregistrées cette année-là.
-  const monthsWithDep = [...new Set(state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(year)).map(b=>b.date.slice(0,7)))].sort();
+  const monthsWithDep = [...new Set(getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(year)).map(b=>b.date.slice(0,7)))].sort();
   return monthsWithDep.length ? monthsWithDep[monthsWithDep.length-1] : currentYm;
 }
 
@@ -234,16 +235,16 @@ function renderCategRecap(year) {
   const MOIS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   let items, periodLabel;
   if (recapView === 'annee') {
-    items = state.budget.filter(b=>b.date.startsWith(year));
+    items = getBudgetOps().filter(b=>b.date.startsWith(year));
     periodLabel = year;
   } else if (recapView === 'trimestre') {
     const ref = getReferenceYearMonth();
     const debut = addMonths(ref+'-01', -2).slice(0,7);
-    items = state.budget.filter(b=>b.date.slice(0,7)>=debut && b.date.slice(0,7)<=ref);
+    items = getBudgetOps().filter(b=>b.date.slice(0,7)>=debut && b.date.slice(0,7)<=ref);
     periodLabel = formatPeriodeMois(debut, ref);
   } else {
     const ref = getReferenceYearMonth();
-    items = state.budget.filter(b=>b.date.startsWith(ref));
+    items = getBudgetOps().filter(b=>b.date.startsWith(ref));
     periodLabel = formatPeriodeMois(ref, ref);
   }
   document.getElementById('recapPeriodLabel').textContent = periodLabel;
@@ -270,7 +271,7 @@ function renderPrevisionWidget() {
   if (lblEl) lblEl.textContent = `${MOIS[parseInt(ref.slice(5,7))]} ${ref.slice(0,4)}`;
 
   const reelParCateg = {};
-  state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(ref)).forEach(b=>{
+  getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(ref)).forEach(b=>{
     reelParCateg[b.categ||'Autre'] = (reelParCateg[b.categ||'Autre']||0)+b.montant;
   });
   const prevs = state.budgetPrevisionnel||{};
@@ -338,7 +339,7 @@ function detectAnomalies() {
   const anomalies = [];
 
   // 1. Catégorie dont la dépense du mois dépasse nettement sa moyenne récente
-  const refItems = state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(ref));
+  const refItems = getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(ref));
   const parCateg = {};
   refItems.forEach(b=>{ const c=b.categ||'Autre'; parCateg[c]=(parCateg[c]||0)+b.montant; });
 
@@ -346,7 +347,7 @@ function detectAnomalies() {
     let total=0, count=0;
     for (let i=1;i<=HIST_MOIS;i++){
       const ym = addMonths(ref+'-01', -i).slice(0,7);
-      const m = state.budget.filter(b=>b.type==='depense'&&(b.categ||'Autre')===categ&&b.date.startsWith(ym)).reduce((s,b)=>s+b.montant,0);
+      const m = getBudgetOps().filter(b=>b.type==='depense'&&(b.categ||'Autre')===categ&&b.date.startsWith(ym)).reduce((s,b)=>s+b.montant,0);
       if (m>0){ total+=m; count++; }
     }
     if (count>=2) {
@@ -364,7 +365,7 @@ function detectAnomalies() {
     const hist = [];
     for (let i=1;i<=HIST_MOIS;i++){
       const ym = addMonths(ref+'-01', -i).slice(0,7);
-      state.budget.filter(x=>x.type==='depense'&&(x.categ||'Autre')===categ&&x.date.startsWith(ym)).forEach(x=>hist.push(x.montant));
+      getBudgetOps().filter(x=>x.type==='depense'&&(x.categ||'Autre')===categ&&x.date.startsWith(ym)).forEach(x=>hist.push(x.montant));
     }
     if (hist.length>=3) {
       const moy = hist.reduce((a,v)=>a+v,0)/hist.length;
@@ -399,7 +400,7 @@ function getEvolutionDepensesCategories(nbMois=12) {
   for (let i=0;i<nbMois;i++) { months.unshift(ym); ym = prevYm(ym); }
   const inWindow = new Set(months);
   const data = {}; // catégorie -> {AAAA-MM: total}
-  state.budget.forEach(b=>{
+  getBudgetOps().forEach(b=>{
     if (b.type!=='depense') return;
     const m = b.date.slice(0,7);
     if (!inWindow.has(m)) return;

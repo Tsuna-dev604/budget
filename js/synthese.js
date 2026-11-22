@@ -170,7 +170,7 @@ function renderDepensesWidget() {
   let debutYm = nowYm;
   if (syntheseDepPeriode==='trimestre') debutYm = prevYm(prevYm(nowYm)); // mois en cours + 2 précédents
   else if (syntheseDepPeriode==='annee') debutYm = nowYm.slice(0,4)+'-01';
-  const items = state.budget.filter(b=>{ const m=b.date.slice(0,7); return m>=debutYm && m<=nowYm; });
+  const items = getBudgetOps().filter(b=>{ const m=b.date.slice(0,7); return m>=debutYm && m<=nowYm; });
   const lbl = document.getElementById('depensesPeriodeLabel');
   if (lbl) lbl.textContent = formatPeriodeMois(debutYm, nowYm);
   document.getElementById('depensesWidgetList').innerHTML = categBarListHtml(items, 'depense');
@@ -250,7 +250,7 @@ function getMoyenneDepensesMensuelles(nbMois, offsetMois=0) {
   for (let i=offsetMois; i<offsetMois+nbMois; i++) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
     const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const dep = state.budget.filter(b=>b.type==='depense'&&b.date.startsWith(ym)).reduce((s,b)=>s+b.montant,0);
+    const dep = getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(ym)).reduce((s,b)=>s+b.montant,0);
     if (dep>0) { total += dep; count++; }
   }
   return count>0 ? total/count : 0;

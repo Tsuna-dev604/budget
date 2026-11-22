@@ -34,19 +34,19 @@ function getEpargneMoisCourant() {
   // Seules les opérations DÉJÀ survenues (date ≤ aujourd'hui) comptent : un salaire prévu le 25
   // n'apparaît pas le 3. Les virements vers un actif d'épargne (type « virement ») ne sont ni des
   // dépenses ni des revenus : ils restent hors de ce calcul.
-  const items = state.budget.filter(b=>b.date.startsWith(ym) && b.date<=now);
+  const items = getBudgetOps().filter(b=>b.date.startsWith(ym) && b.date<=now);
   const rev = items.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
   const dep = items.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
   return {rev,dep,solde:rev-dep};
 }
 // Épargne cumulée depuis le début (toutes opérations confondues).
 function getEpargne() {
-  const rev = state.budget.filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
-  const dep = state.budget.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
+  const rev = getBudgetOps().filter(b=>b.type==='revenu').reduce((s,b)=>s+b.montant,0);
+  const dep = getBudgetOps().filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
   return {rev,dep,solde:rev-dep};
 }
 function getDepensesMensuelles() {
-  return state.budget.filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
+  return getBudgetOps().filter(b=>b.type==='depense').reduce((s,b)=>s+b.montant,0);
 }
 function getRdmtMoyen() {
   const finActifs = state.actifs.filter(a=>a.category!=='physique');

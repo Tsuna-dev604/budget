@@ -40,6 +40,7 @@ function runAutoSync() {
   const etapes = [
     migratePeaPositions,        // anciennes lignes PEA → positions + achats
     migrateVirementsEpargne,    // anciens virements d'épargne « dépense » → type virement
+    migrateComptesHorsBudget,   // Caisse d'Épargne : hors périmètre du budget
     syncRecurrents,             // salaires, virements reçus, dépenses fixes
     syncVersementsProgrammes,   // virements compte → livrets
     syncBiensFromPassifs,       // lie chaque bien à son passif (adoption / création)

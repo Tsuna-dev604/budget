@@ -78,7 +78,7 @@ function syncVersementsProgrammes() {
 // Total viré vers l'épargne ce mois-ci (opérations déjà effectuées), pour le « Flux du mois ».
 function getVirementsEpargneMois() {
   const now = today(), ym = now.slice(0,7);
-  return state.budget.filter(b=>b.type==='virement' && b.date.startsWith(ym) && b.date<=now).reduce((s,b)=>s+b.montant,0);
+  return getBudgetOps().filter(b=>b.type==='virement' && b.date.startsWith(ym) && b.date<=now).reduce((s,b)=>s+b.montant,0);
 }
 
 // Supprimer un virement du Budget doit aussi défaire son effet sur le livret : sinon le livret reste
