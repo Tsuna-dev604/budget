@@ -84,3 +84,54 @@ document.addEventListener('keydown', e=>{
   document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
   closeSidebarMobile();
 });
+
+// ═══════════════════════════════════════
+//  Panel admin — choix des fenêtres affichées dans le bandeau latéral
+//  Stocké dans state.settings.navHidden (liste d'ids de section masquées) : synchronisé avec le cloud.
+//  Masquer une entrée ne touche à aucune donnée ; « Paramètres » ne peut pas être masqué.
+// ═══════════════════════════════════════
+const navHiddenIds = () => (state.settings && Array.isArray(state.settings.navHidden)) ? state.settings.navHidden : [];
+
+function renderNavAdmin() {
+  const items = [...document.querySelectorAll('#sidebarNav .nav-item[data-section]')];
+  const hidden = new Set(navHiddenIds());
+  items.forEach(el=>{ el.style.display = hidden.has(el.dataset.section) ? 'none' : ''; });
+
+  // La section active vient d'être masquée : on bascule sur la première visible (ou Paramètres),
+  // sans relancer le rendu (on est déjà dedans).
+  const active = document.querySelector('.section.active');
+  if (active && hidden.has(active.id)) {
+    const next = items.find(el=>!hidden.has(el.dataset.section));
+    const targetId = next ? next.dataset.section : 'parametres';
+    document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.id===targetId));
+    document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
+    const navEl = next || document.querySelector('.sidebar-bottom .nav-item[data-section="parametres"]');
+    if (navEl) navEl.classList.add('active');
+    const mt = document.getElementById('mobileTitle');
+    if (mt) mt.textContent = SECTION_TITLES[targetId] || '';
+  }
+
+  const list = document.getElementById('navAdminList');
+  if (!list) return;
+  list.innerHTML = items.map(el=>{
+    const id = el.dataset.section;
+    const icon = el.querySelector('.nav-icon')?.textContent || '';
+    const label = el.querySelector('.nav-label')?.textContent || id;
+    return `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px">
+      <input type="checkbox" ${hidden.has(id)?'':'checked'} onchange="toggleNavItem('${id}', this.checked)">
+      <span>${icon}</span><span>${esc(label)}</span>
+    </label>`;
+  }).join('');
+}
+function toggleNavItem(id, visible) {
+  if (!state.settings) state.settings = {};
+  const hidden = new Set(navHiddenIds());
+  if (visible) hidden.delete(id); else hidden.add(id);
+  state.settings.navHidden = [...hidden];
+  renderAll();
+}
+function resetNavAdmin() {
+  if (!state.settings) state.settings = {};
+  state.settings.navHidden = [];
+  renderAll();
+}

@@ -25,7 +25,7 @@
 <script src="vendor/supabase-js-2.119.2.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261122b">
+<link rel="stylesheet" href="css/style.css?v=20261122c">
 </head>
 <body>
 
@@ -70,18 +70,18 @@
     </div>
 
     <nav class="sidebar-nav" id="sidebarNav">
-      <div class="nav-item active" title="Synthèse" onclick="showSection('synthese',this)"><span class="nav-icon">📊</span><span class="nav-label">Synthèse</span></div>
-      <div class="nav-item" title="Budget" onclick="showSection('budget',this)"><span class="nav-icon">💳</span><span class="nav-label">Budget</span></div>
-      <div class="nav-item" title="Liquidités" onclick="showSection('comptes',this)"><span class="nav-icon">🏦</span><span class="nav-label">Liquidités</span></div>
-      <div class="nav-item" title="Patrimoine" onclick="showSection('actifs',this)"><span class="nav-icon">💼</span><span class="nav-label">Patrimoine</span></div>
-      <div class="nav-item" title="Immobilier" onclick="showSection('immobilier',this)"><span class="nav-icon">🏠</span><span class="nav-label">Immobilier</span></div>
-      <div class="nav-item" title="Investissements" onclick="showSection('simu_pea',this)"><span class="nav-icon">📈</span><span class="nav-label">Investissements</span></div>
-      <div class="nav-item" title="Simulations" onclick="showSection('simulations',this)"><span class="nav-icon">🧮</span><span class="nav-label">Simulations</span></div>
-      <div class="nav-item" title="Objectifs" onclick="showSection('objectifs',this)"><span class="nav-icon">🎯</span><span class="nav-label">Objectifs</span></div>
+      <div class="nav-item active" data-section="synthese" title="Synthèse" onclick="showSection('synthese',this)"><span class="nav-icon">📊</span><span class="nav-label">Synthèse</span></div>
+      <div class="nav-item" data-section="budget" title="Budget" onclick="showSection('budget',this)"><span class="nav-icon">💳</span><span class="nav-label">Budget</span></div>
+      <div class="nav-item" data-section="comptes" title="Liquidités" onclick="showSection('comptes',this)"><span class="nav-icon">🏦</span><span class="nav-label">Liquidités</span></div>
+      <div class="nav-item" data-section="actifs" title="Patrimoine" onclick="showSection('actifs',this)"><span class="nav-icon">💼</span><span class="nav-label">Patrimoine</span></div>
+      <div class="nav-item" data-section="immobilier" title="Immobilier" onclick="showSection('immobilier',this)"><span class="nav-icon">🏠</span><span class="nav-label">Immobilier</span></div>
+      <div class="nav-item" data-section="simu_pea" title="Investissements" onclick="showSection('simu_pea',this)"><span class="nav-icon">📈</span><span class="nav-label">Investissements</span></div>
+      <div class="nav-item" data-section="simulations" title="Simulations" onclick="showSection('simulations',this)"><span class="nav-icon">🧮</span><span class="nav-label">Simulations</span></div>
+      <div class="nav-item" data-section="objectifs" title="Objectifs" onclick="showSection('objectifs',this)"><span class="nav-icon">🎯</span><span class="nav-label">Objectifs</span></div>
     </nav>
 
     <div class="sidebar-bottom">
-      <div class="nav-item" title="Paramètres" onclick="showSection('parametres',this)"><span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span></div>
+      <div class="nav-item" data-section="parametres" title="Paramètres" onclick="showSection('parametres',this)"><span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span></div>
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Changer de thème">
         <span id="themeIcon">🌙</span><span class="nav-label" id="themeLabel">Mode sombre</span>
       </button>
@@ -746,6 +746,15 @@
         </div>
       </div>
 
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">Panel admin — Bandeau latéral</span>
+          <button class="btn" onclick="resetNavAdmin()" title="Réafficher toutes les fenêtres">Tout réafficher</button>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Choisissez les fenêtres affichées dans le bandeau latéral. Masquer une fenêtre ne supprime aucune donnée ; « Paramètres » reste toujours visible.</p>
+        <div id="navAdminList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px"></div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
           <div class="card-header"><span class="card-title">Opérations récurrentes</span></div>
@@ -1338,31 +1347,31 @@
 
 
 <!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
-<script src="js/config.js?v=20261122b"></script>
-<script src="js/state.js?v=20261122b"></script>
-<script src="js/utils.js?v=20261122b"></script>
-<script src="js/theme.js?v=20261122b"></script>
-<script src="js/auth.js?v=20261122b"></script>
-<script src="js/nav.js?v=20261122b"></script>
-<script src="js/budget.js?v=20261122b"></script>
-<script src="js/comptes.js?v=20261122b"></script>
-<script src="js/liquidites.js?v=20261122b"></script>
-<script src="js/epargne.js?v=20261122b"></script>
-<script src="js/actifs.js?v=20261122b"></script>
-<script src="js/passifs.js?v=20261122b"></script>
-<script src="js/patrimoine.js?v=20261122b"></script>
-<script src="js/synthese.js?v=20261122b"></script>
-<script src="js/pea.js?v=20261122b"></script>
-<script src="js/market-data.js?v=20261122b"></script>
-<script src="js/salaire.js?v=20261122b"></script>
-<script src="js/immobilier.js?v=20261122b"></script>
-<script src="js/render.js?v=20261122b"></script>
-<script src="js/import-export.js?v=20261122b"></script>
-<script src="js/import-csv.js?v=20261122b"></script>
-<script src="js/patrimoine-detail.js?v=20261122b"></script>
-<script src="js/simulations.js?v=20261122b"></script>
-<script src="js/objectifs.js?v=20261122b"></script>
-<script src="js/demo-data.js?v=20261122b"></script>
-<script src="js/main.js?v=20261122b"></script>
+<script src="js/config.js?v=20261122c"></script>
+<script src="js/state.js?v=20261122c"></script>
+<script src="js/utils.js?v=20261122c"></script>
+<script src="js/theme.js?v=20261122c"></script>
+<script src="js/auth.js?v=20261122c"></script>
+<script src="js/nav.js?v=20261122c"></script>
+<script src="js/budget.js?v=20261122c"></script>
+<script src="js/comptes.js?v=20261122c"></script>
+<script src="js/liquidites.js?v=20261122c"></script>
+<script src="js/epargne.js?v=20261122c"></script>
+<script src="js/actifs.js?v=20261122c"></script>
+<script src="js/passifs.js?v=20261122c"></script>
+<script src="js/patrimoine.js?v=20261122c"></script>
+<script src="js/synthese.js?v=20261122c"></script>
+<script src="js/pea.js?v=20261122c"></script>
+<script src="js/market-data.js?v=20261122c"></script>
+<script src="js/salaire.js?v=20261122c"></script>
+<script src="js/immobilier.js?v=20261122c"></script>
+<script src="js/render.js?v=20261122c"></script>
+<script src="js/import-export.js?v=20261122c"></script>
+<script src="js/import-csv.js?v=20261122c"></script>
+<script src="js/patrimoine-detail.js?v=20261122c"></script>
+<script src="js/simulations.js?v=20261122c"></script>
+<script src="js/objectifs.js?v=20261122c"></script>
+<script src="js/demo-data.js?v=20261122c"></script>
+<script src="js/main.js?v=20261122c"></script>
 </body>
 </html>

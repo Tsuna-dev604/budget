@@ -21,6 +21,7 @@ function renderAllInner() {
   renderSimuAV();
   renderObjectifs();
   updateLastExportInfo();
+  renderNavAdmin();
 }
 function renderAll() {
   // La sauvegarde cloud ne doit jamais dépendre du rendu : une erreur d'affichage ne doit pas faire perdre
