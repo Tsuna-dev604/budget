@@ -195,56 +195,112 @@ function importData(event) {
   reader.readAsText(file);
 }
 
+
 async function importFromText(text) {
   let parsed;
-  try { parsed = JSON.parse(text); } catch { notify('Fichier illisible : ce n\'est pas du JSON valide', true); return; }
-  if (!parsed || typeof parsed!=='object' || Array.isArray(parsed)) { notify('Format invalide', true); return; }
 
-  let data, verified = false;
-    // SHA-256 facultatif : aucune comparaison ne bloque l'import.
-  if (parsed.checksum && typeof parsed.checksum.value === 'string') {
-    const attendu = parsed.checksum.value.toLowerCase();
-    const calcule = await sha256Hex(canonicalJson(parsed.data));
-
-    verified = attendu === calcule;
-
-    if (!verified) {
-      console.warn('SHA-256 différent : import autorisé malgré la modification du fichier.');
-    }
-  }
-
-  data = parsed.data;
-
-} else if (Array.isArray(parsed.budget)) {
-  data = parsed;
-} else {
-  notify('Format invalide : ce fichier n’est pas une sauvegarde de l’application', true);
-  return;
-}
-
-  const errors = validateStateShape(data);
-  if (errors.length) {
-    console.error('Import refusé :', errors);
-    notify('Fichier invalide : '+errors[0]+(errors.length>1?` (+${errors.length-1} autre(s), voir la console)`:''), true);
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    notify('Fichier illisible : ce n’est pas du JSON valide', true);
     return;
   }
 
-  const n = k => (data[k]||[]).length, cur = k => (state[k]||[]).length;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    notify('Format invalide', true);
+    return;
+  }
+
+  let data, verified = false;
+
+  // Format avec enveloppe versionnée
+  if (parsed.app === EXPORT_APP_ID && parsed.data) {
+
+    if (typeof parsed.schemaVersion !== 'number' ||
+        parsed.schemaVersion > STATE_SCHEMA_VERSION) {
+      notify('Ce fichier vient d’une version plus récente de l’application : mettez-la à jour avant d’importer', true);
+      return;
+    }
+
+    // SHA-256 facultatif : ne bloque jamais l'import
+    if (parsed.checksum && typeof parsed.checksum.value === 'string') {
+      try {
+        const attendu = parsed.checksum.value.toLowerCase();
+        const calcule = await sha256Hex(canonicalJson(parsed.data));
+
+        verified = attendu === calcule;
+
+        if (!verified) {
+          console.warn('SHA-256 différent : import autorisé.');
+        }
+      } catch (e) {
+        console.warn('Vérification SHA-256 impossible : import autorisé.', e);
+      }
+    }
+
+    data = parsed.data;
+
+  } else if (Array.isArray(parsed.budget)) {
+
+    // Ancien format brut
+    data = parsed;
+
+  } else {
+    notify('Format invalide : ce fichier n’est pas une sauvegarde de l’application', true);
+    return;
+  }
+
+  // Validation structurelle conservée
+  const errors = validateStateShape(data);
+
+  if (errors.length) {
+    console.error('Import refusé :', errors);
+    notify('Fichier invalide : ' + errors[0] +
+      (errors.length > 1 ? ` (+${errors.length - 1} autre(s), voir la console)` : ''), true);
+    return;
+  }
+
+  const n = k => (data[k] || []).length;
+  const cur = k => (state[k] || []).length;
+
   const resume = `${n('budget')} opération(s), ${n('actifs')} actif(s), ${n('passifs')} passif(s), ${n('comptes')} compte(s), ${n('immoBiens')} bien(s), ${n('peaTitres')} position(s)`;
-  const msg = `Importer cette sauvegarde ?\n\n${resume}\n${verified ? '✔ Intégrité vérifiée (SHA-256).' : '⚠ Ancien format : aucune empreinte, intégrité non vérifiable.'}\n\n`
+
+  const msg = `Importer cette sauvegarde ?\n\n${resume}\n${verified
+    ? '✔ Intégrité vérifiée (SHA-256).'
+    : '⚠ Empreinte absente ou différente : import autorisé.'}\n\n`
     + `Cela REMPLACE vos données actuelles (${cur('budget')} opération(s), ${cur('actifs')} actif(s)…) et leur copie en ligne.\n`
     + `Une sauvegarde de vos données actuelles sera d'abord téléchargée.`;
-  if (!confirm(msg)) { notify('Import annulé'); return; }
 
-  // Filet de sécurité : l'état actuel est sauvegardé avant tout remplacement.
-  try { downloadJson(await buildExportEnvelope(), `budget-patrimoine-AVANT-IMPORT-${today()}.json`); }
-  catch (e) { console.error(e); if (!confirm('La sauvegarde automatique a échoué. Continuer quand même ?')) return; }
+  if (!confirm(msg)) {
+    notify('Import annulé');
+    return;
+  }
 
+  // Sauvegarde automatique avant remplacement
+  try {
+    downloadJson(
+      await buildExportEnvelope(),
+      `budget-patrimoine-AVANT-IMPORT-${today()}.json`
+    );
+  } catch (e) {
+    console.error(e);
+    if (!confirm('La sauvegarde automatique a échoué. Continuer quand même ?')) return;
+  }
+
+  // Conservation de la clé API locale
   const cleKeep = state.settings && state.settings.apiKeyAlpha;
   const next = pickKnownState(data);
-  next.settings = {...getDefaultState().settings, ...(next.settings||{}), apiKeyAlpha: cleKeep || (next.settings && next.settings.apiKeyAlpha) || ''};
+
+  next.settings = {
+    ...getDefaultState().settings,
+    ...(next.settings || {}),
+    apiKeyAlpha: cleKeep || (next.settings && next.settings.apiKeyAlpha) || ''
+  };
+
   state = next;
+
   runAutoSync();
   renderAll();
   notify('Données importées');
 }
+
