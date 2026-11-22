@@ -278,6 +278,9 @@ function renderPrevisionWidget() {
   const categs = [...new Set([...CATEG_DEPENSE, ...Object.keys(reelParCateg)])]
     .filter(c=>prevs[c]>0 || reelParCateg[c]>0);
 
+  const tfoot = document.getElementById('previsionTfoot');
+  if (tfoot) tfoot.innerHTML = '';
+
   if (!categs.length) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Aucun budget prévisionnel défini pour l\'instant. Renseignez un montant prévu ci-dessous pour vos catégories habituelles.</td></tr>';
   } else {
@@ -295,6 +298,18 @@ function renderPrevisionWidget() {
         <td class="gold">${fmt(r.reel)}</td>
         <td class="${r.ecart>0?'red':'green'}">${r.ecart>0?'+':''}${fmt(r.ecart)}</td>
       </tr>`).join('');
+
+    // Ligne de total (somme des catégories affichées)
+    const totPrevu = rows.reduce((s,r)=>s+r.prevu,0);
+    const totReel = rows.reduce((s,r)=>s+r.reel,0);
+    const totEcart = totReel - totPrevu;
+    if (tfoot) tfoot.innerHTML = `
+      <tr style="border-top:2px solid var(--border);font-weight:600">
+        <td class="highlight">Total</td>
+        <td class="gold">${fmt(totPrevu)}</td>
+        <td class="gold">${fmt(totReel)}</td>
+        <td class="${totEcart>0?'red':'green'}">${totEcart>0?'+':''}${fmt(totEcart)}</td>
+      </tr>`;
   }
 
   // Liste déroulante pour ajouter une catégorie non encore budgétée
