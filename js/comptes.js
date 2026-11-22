@@ -19,21 +19,25 @@ function getSoldeCompte(compteId, dateStr) {
 // Un compte « hors budget » (ex. Caisse d'Épargne) garde ses opérations et son solde, mais ses
 // opérations ne comptent ni dans les revenus/dépenses, ni dans les récaps, prévisions, anomalies,
 // épargne mensuelle ou synthèse. Une opération sans compte reste comptée (comportement historique).
+// Défaut quand l'utilisateur n'a encore rien choisi (horsBudget non défini) : la Caisse d'Épargne est hors budget.
+// Calculé à la lecture : ne dépend donc d'aucune migration ni de l'état de synchronisation.
+const estCaisseEpargne = c => /caisse\s*d.?\s*[ée]pargne/i.test(`${c.label||''} ${c.banque||''}`);
+function compteHorsBudget(c) {
+  return typeof c.horsBudget === 'boolean' ? c.horsBudget : estCaisseEpargne(c);
+}
 function compteDansBudget(compteId) {
   const c = state.comptes.find(x=>x.id===compteId);
-  return !(c && c.horsBudget);
+  return !(c && compteHorsBudget(c));
 }
 function getBudgetOps() {
   return state.budget.filter(b=>compteDansBudget(b.compteId));
 }
-// Une seule fois par compte (horsBudget non encore défini) : la Caisse d'Épargne est sortie du budget.
-// Modifiable ensuite via la case du formulaire du compte. Vaut pour toutes les dates (depuis janvier 2026
-// et avant) puisque le filtre porte sur le compte, pas sur le mois.
+// Fige le défaut dans les données (une seule fois par compte) pour qu'il soit sauvegardé.
 function migrateComptesHorsBudget() {
   let changed = false;
   state.comptes.forEach(c=>{
     if (typeof c.horsBudget === 'boolean') return;
-    c.horsBudget = /caisse\s*d.?\s*[ée]pargne/i.test(`${c.label||''} ${c.banque||''}`);
+    c.horsBudget = estCaisseEpargne(c);
     changed = true;
   });
   return changed;
@@ -71,7 +75,7 @@ function openEditCompte(id) {
   document.getElementById('cptLabel').value = c.label;
   document.getElementById('cptBanque').value = c.banque||'';
   document.getElementById('cptSoldeInitial').value = c.soldeInitial||0;
-  document.getElementById('cptInclureBudget').checked = !c.horsBudget;
+  document.getElementById('cptInclureBudget').checked = !compteHorsBudget(c);
   document.getElementById('cptDeleteBtn').style.display = 'inline-block';
   openModal('modalCompte');
 }
@@ -139,7 +143,7 @@ function renderComptes() {
         </div>
       </div>
       ${c.banque?`<div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">${esc(c.banque)}</div>`:''}
-      ${c.horsBudget?'<div style="margin-bottom:8px"><span class="badge">Hors budget</span></div>':''}
+      ${compteHorsBudget(c)?'<div style="margin-bottom:8px"><span class="badge">Hors budget</span></div>':''}
       <div class="card-value ${solde<0?'red':'gold'}">${fmt(solde)}</div>
       <div class="card-sub">Solde actuel · initial ${fmt(c.soldeInitial||0)}</div>
       <hr class="divider">
