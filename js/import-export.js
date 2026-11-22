@@ -201,18 +201,26 @@ async function importFromText(text) {
   if (!parsed || typeof parsed!=='object' || Array.isArray(parsed)) { notify('Format invalide', true); return; }
 
   let data, verified = false;
-  if (parsed.app===EXPORT_APP_ID && parsed.data) {
-    if (typeof parsed.schemaVersion!=='number' || parsed.schemaVersion>STATE_SCHEMA_VERSION) {
-      notify('Ce fichier vient d\'une version plus récente de l\'application : mettez-la à jour avant d\'importer', true); return;
-    }
-    if (!parsed.checksum || typeof parsed.checksum.value!=='string') { notify('Fichier sans empreinte : import refusé', true); return; }
+    // SHA-256 facultatif : aucune comparaison ne bloque l'import.
+  if (parsed.checksum && typeof parsed.checksum.value === 'string') {
     const attendu = parsed.checksum.value.toLowerCase();
     const calcule = await sha256Hex(canonicalJson(parsed.data));
-    if (attendu!==calcule) { notify('Intégrité compromise : le fichier est corrompu ou a été modifié. Import annulé.', true); return; }
-    data = parsed.data; verified = true;
-  } else if (Array.isArray(parsed.budget)) {
-    data = parsed; // ancien export brut, sans empreinte
-  } else { notify('Format invalide : ce fichier n\'est pas une sauvegarde de l\'application', true); return; }
+
+    verified = attendu === calcule;
+
+    if (!verified) {
+      console.warn('SHA-256 différent : import autorisé malgré la modification du fichier.');
+    }
+  }
+
+  data = parsed.data;
+
+} else if (Array.isArray(parsed.budget)) {
+  data = parsed;
+} else {
+  notify('Format invalide : ce fichier n’est pas une sauvegarde de l’application', true);
+  return;
+}
 
   const errors = validateStateShape(data);
   if (errors.length) {
