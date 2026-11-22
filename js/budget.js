@@ -102,6 +102,17 @@ function selectMonth(m, el) {
   el.classList.add('active');
   renderBudgetTable();
 }
+// Filtre « compte » de la liste des opérations : tous / comptes du budget / un compte / sans compte.
+function buildCompteFilter() {
+  const sel = document.getElementById('filterBudgetCompte');
+  if (!sel) return 'all';
+  const cur = sel.value || 'all';
+  sel.innerHTML = '<option value="all">Tous les comptes</option><option value="budget">Comptes du budget</option>'
+    + state.comptes.map(c=>`<option value="${esc(c.id)}">${esc(c.label)}${c.horsBudget?' (hors budget)':''}</option>`).join('')
+    + '<option value="none">Sans compte</option>';
+  sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'all';
+  return sel.value;
+}
 function renderBudgetTable() {
   buildYearSelect();
   buildMonthTabs();
@@ -110,14 +121,20 @@ function renderBudgetTable() {
   const month = currentBudgetMonth;
   const MOIS  = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
+  const compteFiltre = buildCompteFilter();
   let items = state.budget.filter(b=>b.date.startsWith(year));
   if (month!=='all') items = items.filter(b=>b.date.slice(5,7)===month);
   if (type!=='all') items = items.filter(b=>b.type===type);
+  if (compteFiltre==='budget') items = items.filter(b=>compteDansBudget(b.compteId));
+  else if (compteFiltre==='none') items = items.filter(b=>!b.compteId);
+  else if (compteFiltre!=='all') items = items.filter(b=>b.compteId===compteFiltre);
+  // Un compte (ou « sans compte ») choisi explicitement est totalisé tel quel, même hors budget.
+  const filtreExplicite = compteFiltre!=='all' && compteFiltre!=='budget';
 
   // Un virement d'épargne n'est ni un revenu ni une dépense : il est exclu du solde net et du taux d'épargne.
   // Les opérations des comptes « hors budget » restent listées (grisées) mais ne sont pas totalisées.
   let rev=0, dep=0, vir=0;
-  items.filter(b=>compteDansBudget(b.compteId)).forEach(b=>{if(b.type==='revenu')rev+=b.montant;else if(b.type==='virement')vir+=b.montant;else dep+=b.montant;});
+  items.filter(b=>filtreExplicite || compteDansBudget(b.compteId)).forEach(b=>{if(b.type==='revenu')rev+=b.montant;else if(b.type==='virement')vir+=b.montant;else dep+=b.montant;});
   document.getElementById('bRevenu').textContent = fmt(rev);
   document.getElementById('bDepense').textContent = fmt(dep);
   const solde = rev-dep;

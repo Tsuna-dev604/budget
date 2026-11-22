@@ -25,7 +25,7 @@
 <script src="vendor/supabase-js-2.119.2.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261122">
+<link rel="stylesheet" href="css/style.css?v=20261122b">
 </head>
 <body>
 
@@ -225,6 +225,7 @@
         </select>
         <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
         </select>
+        <select id="filterBudgetCompte" title="Filtrer les opérations par compte" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()"></select>
       </div>
 
       <div class="month-tabs" id="monthTabs"></div>
@@ -1337,31 +1338,31 @@
 
 
 <!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
-<script src="js/config.js?v=20261122"></script>
-<script src="js/state.js?v=20261122"></script>
-<script src="js/utils.js?v=20261122"></script>
-<script src="js/theme.js?v=20261122"></script>
-<script src="js/auth.js?v=20261122"></script>
-<script src="js/nav.js?v=20261122"></script>
-<script src="js/budget.js?v=20261122"></script>
-<script src="js/comptes.js?v=20261122"></script>
-<script src="js/liquidites.js?v=20261122"></script>
-<script src="js/epargne.js?v=20261122"></script>
-<script src="js/actifs.js?v=20261122"></script>
-<script src="js/passifs.js?v=20261122"></script>
-<script src="js/patrimoine.js?v=20261122"></script>
-<script src="js/synthese.js?v=20261122"></script>
-<script src="js/pea.js?v=20261122"></script>
-<script src="js/market-data.js?v=20261122"></script>
-<script src="js/salaire.js?v=20261122"></script>
-<script src="js/immobilier.js?v=20261122"></script>
-<script src="js/render.js?v=20261122"></script>
-<script src="js/import-export.js?v=20261122"></script>
-<script src="js/import-csv.js?v=20261122"></script>
-<script src="js/patrimoine-detail.js?v=20261122"></script>
-<script src="js/simulations.js?v=20261122"></script>
-<script src="js/objectifs.js?v=20261122"></script>
-<script src="js/demo-data.js?v=20261122"></script>
-<script src="js/main.js?v=20261122"></script>
+<script src="js/config.js?v=20261122b"></script>
+<script src="js/state.js?v=20261122b"></script>
+<script src="js/utils.js?v=20261122b"></script>
+<script src="js/theme.js?v=20261122b"></script>
+<script src="js/auth.js?v=20261122b"></script>
+<script src="js/nav.js?v=20261122b"></script>
+<script src="js/budget.js?v=20261122b"></script>
+<script src="js/comptes.js?v=20261122b"></script>
+<script src="js/liquidites.js?v=20261122b"></script>
+<script src="js/epargne.js?v=20261122b"></script>
+<script src="js/actifs.js?v=20261122b"></script>
+<script src="js/passifs.js?v=20261122b"></script>
+<script src="js/patrimoine.js?v=20261122b"></script>
+<script src="js/synthese.js?v=20261122b"></script>
+<script src="js/pea.js?v=20261122b"></script>
+<script src="js/market-data.js?v=20261122b"></script>
+<script src="js/salaire.js?v=20261122b"></script>
+<script src="js/immobilier.js?v=20261122b"></script>
+<script src="js/render.js?v=20261122b"></script>
+<script src="js/import-export.js?v=20261122b"></script>
+<script src="js/import-csv.js?v=20261122b"></script>
+<script src="js/patrimoine-detail.js?v=20261122b"></script>
+<script src="js/simulations.js?v=20261122b"></script>
+<script src="js/objectifs.js?v=20261122b"></script>
+<script src="js/demo-data.js?v=20261122b"></script>
+<script src="js/main.js?v=20261122b"></script>
 </body>
 </html>
