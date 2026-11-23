@@ -38,16 +38,23 @@ async function fetchStockPrice(ticker) {
   if (cached) return {price: cached.price, cached: true};
   const apiKey = state.settings?.apiKeyAlpha;
   if (!apiKey) throw new Error('no_api_key');
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(apiKey)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('http_error');
-  const data = await res.json();
-  const priceStr = data?.['Global Quote']?.['05. price'];
-  if (!priceStr) throw new Error(data?.Note ? 'quota' : 'not_found');
-  const price = parseFloat(priceStr);
-  if (isNaN(price)) throw new Error('parse_error');
-  setCachedPrice(ticker, price);
-  return {price, cached:false};
+  // Sans suffixe de place (ex. « DCAM »), on essaie Paris (.PAR) puis le ticker tel quel.
+  const candidates = /\.[A-Z]{2,4}$/.test(ticker) ? [ticker] : [ticker+'.PAR', ticker];
+  for (const sym of candidates) {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(sym)}&apikey=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('http_error');
+    const data = await res.json();
+    // Alpha Vantage signale quota dépassé / clé invalide via « Note » ou « Information » (et non « Global Quote »).
+    if (data?.Note || data?.Information) throw new Error('quota');
+    const priceStr = data?.['Global Quote']?.['05. price'];
+    if (!priceStr) continue; // symbole inconnu : variante suivante
+    const price = parseFloat(priceStr);
+    if (isNaN(price)) throw new Error('parse_error');
+    setCachedPrice(ticker, price);
+    return {price, cached:false};
+  }
+  throw new Error('not_found');
 }
 
 async function fetchPeaTitreCours(id) {
@@ -64,7 +71,8 @@ async function fetchPeaTitreCours(id) {
   } catch (e) {
     if (e.message==='no_api_key') notify('Aucune clé API configurée (⚙ Cours API) — mets à jour le cours manuellement',true);
     else if (e.message==='quota') notify('Quota API atteint — mets à jour le cours manuellement en attendant',true);
-    else notify('Échec de récupération du cours — mets-le à jour manuellement',true);
+    else if (e.message==='not_found') notify(`Ticker « ${t.ticker} » introuvable chez Alpha Vantage (format attendu : DCAM.PAR) — saisis le cours manuellement`,true);
+    else notify(`Échec de récupération du cours (${e.message}) — mets-le à jour manuellement`,true);
   }
 }
 async function fetchPeaTitreCoursForm() {
@@ -78,7 +86,8 @@ async function fetchPeaTitreCoursForm() {
   } catch (e) {
     if (e.message==='no_api_key') notify('Aucune clé API configurée — clique sur ⚙ Cours API, ou saisis le cours manuellement ci-dessous',true);
     else if (e.message==='quota') notify('Quota API atteint — saisis le cours manuellement',true);
-    else notify('Ticker introuvable ou échec API — saisis le cours manuellement',true);
+    else if (e.message==='not_found') notify(`Ticker « ${ticker} » introuvable chez Alpha Vantage (format attendu : DCAM.PAR) — saisis le cours manuellement`,true);
+    else notify(`Échec API (${e.message}) — saisis le cours manuellement`,true);
   }
 }
 // Actualise tous les cours séquentiellement en respectant le rate-limit gratuit (~5 req/min => 12s d'espacement)
