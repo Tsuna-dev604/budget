@@ -10,6 +10,7 @@ let syntheseSeries = { net:true, actifs:true, passifs:true };
 let syntheseDepPeriode = 'mois'; // 'mois' | 'trimestre' | 'annee'
 
 function renderSynthese() {
+  applySyntheseLayout(); // ordre, largeur et visibilité choisis dans Paramètres (js/synthese-layout.js)
   document.getElementById('lastUpdated').textContent = 'Dernière mise à jour : '+new Date().toLocaleString('fr-FR');
   renderSyntheseKpis();
   renderPatrimoineChart();

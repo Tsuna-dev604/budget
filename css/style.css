@@ -255,6 +255,22 @@ select.filter-active{border-color:var(--gold);color:var(--gold)}
 .categ-filter-badge{cursor:pointer}
 .categ-filter-badge:hover{outline:1px solid currentColor;outline-offset:1px}
 
+/* Page Synthèse : blocs sur 2 colonnes, ordre / largeur / visibilité réglables (js/synthese-layout.js) */
+.kpi-grid-auto{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.synthese-blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.synthese-blocks>.synthese-block{margin:0;min-width:0}
+.synthese-blocks>.span-full{grid-column:1/-1}
+/* Panneau d'administration de la disposition */
+.layout-admin-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.layout-admin-list{display:flex;flex-direction:column;gap:6px}
+.layout-row{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+.layout-row.is-hidden .layout-row-label span{color:var(--text3);text-decoration:line-through}
+.layout-row-label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;margin:0}
+.layout-row .icon-btn:disabled{opacity:.3;cursor:default}
+.layout-width{display:flex;border:1px solid var(--border2);border-radius:14px;overflow:hidden}
+.layout-width button{background:none;border:0;padding:3px 9px;font-family:var(--font-mono);font-size:10px;color:var(--text3);cursor:pointer}
+.layout-width button.active{background:var(--gold);color:#fff}
+
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .2s ease;z-index:130}
   .sidebar.open{transform:translateX(0)}
@@ -271,7 +287,7 @@ select.filter-active{border-color:var(--gold);color:var(--gold)}
   .mobile-title{font-family:var(--font-display);font-size:16px;color:var(--text);flex:1}
 
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
-  .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr}
+  .grid-2,.grid-3,.grid-4,.grid-5,.synthese-blocks{grid-template-columns:1fr}
   .immo-metrics{grid-template-columns:repeat(2,1fr)}
   main{padding:16px}
 }
