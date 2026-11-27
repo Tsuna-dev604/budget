@@ -107,8 +107,8 @@ function renderRecurrentsList() {
   }
   el.innerHTML = recs.map(r=>{
     const isRev = (r.type||'revenu')==='revenu';
-    const depuis = `${REC_MOIS[r.fromMonth]||''} ${r.fromYear||''}`;
-    const jusqua = (r.toYear && r.toMonth) ? ` → ${REC_MOIS[r.toMonth]} ${r.toYear}` : '';
+    const depuis = `${REC_MOIS[r.fromMonth]||''} ${esc(r.fromYear||'')}`;
+    const jusqua = (r.toYear && r.toMonth) ? ` → ${REC_MOIS[r.toMonth]||''} ${esc(r.toYear)}` : '';
     const prochaine = getRecurrentProchaineEcheance(r);
     // Sans compte rattaché, l'opération apparaît dans le Budget mais n'a aucun effet sur un solde de compte.
     const compteOk = r.compteId && state.comptes.some(c=>c.id===r.compteId);
@@ -117,7 +117,7 @@ function renderRecurrentsList() {
     return `<div class="alloc-row" style="gap:12px">
       <div style="min-width:0">
         <div style="color:var(--text);font-weight:500">${esc(r.label)} <span class="badge ${isRev?'badge-green':'badge-red'}" style="margin-left:6px">${isRev?'Revenu':'Dépense'}</span></div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">le ${r.jour||1} du mois · ${esc(r.categ||'—')} · ${compteTxt} · ${depuis}${jusqua}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">le ${esc(r.jour||1)} du mois · ${esc(r.categ||'—')} · ${compteTxt} · ${depuis}${jusqua}</div>
         <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:2px">${prochaine ? 'Prochaine échéance : '+fmtDateFr(prochaine) : 'Période terminée'}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">

@@ -25,7 +25,7 @@
 <script src="vendor/supabase-js-2.119.2.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261122c">
+<link rel="stylesheet" href="css/style.css?v=20261127a">
 </head>
 <body>
 
@@ -226,12 +226,17 @@
         <select id="filterBudgetYear" style="width:auto;padding:6px 12px;font-size:12px" onchange="buildMonthTabs();renderBudgetTable()">
         </select>
         <select id="filterBudgetCompte" title="Filtrer les opérations par compte" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()"></select>
+        <select id="filterBudgetCateg" title="Filtrer les opérations par catégorie" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderBudgetTable()"><option value="all">Toutes catégories</option></select>
       </div>
 
       <div class="month-tabs" id="monthTabs"></div>
 
       <div class="card" style="margin-bottom:24px">
         <div class="card-header"><span class="card-title">Opérations</span><span id="budgetMonthLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold)"></span></div>
+        <div id="budgetCategFilterInfo" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
+          <span style="color:var(--text2)">⏷ Filtre catégorie — <span id="budgetCategFilterText"></span></span>
+          <button class="icon-btn" onclick="resetBudgetCategFilter()" title="Afficher toutes les catégories">✕ Retirer le filtre</button>
+        </div>
         <div id="depenseSelectionBar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--bg4);border-bottom:1px solid var(--border2);font-family:var(--font-mono);font-size:12px">
           <span style="color:var(--text2)">☑ <span id="depenseSelectionCount">0</span> dépense(s) cochée(s) — Total : <span id="depenseSelectionTotal" style="color:var(--red);font-weight:600">0 €</span></span>
           <button class="icon-btn" onclick="clearDepenseSelection()" title="Tout décocher">✕ Tout décocher</button>
@@ -1347,31 +1352,31 @@
 
 
 <!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
-<script src="js/config.js?v=20261122c"></script>
-<script src="js/state.js?v=20261122c"></script>
-<script src="js/utils.js?v=20261122c"></script>
-<script src="js/theme.js?v=20261122c"></script>
-<script src="js/auth.js?v=20261122c"></script>
-<script src="js/nav.js?v=20261122c"></script>
-<script src="js/budget.js?v=20261122c"></script>
-<script src="js/comptes.js?v=20261122c"></script>
-<script src="js/liquidites.js?v=20261122c"></script>
-<script src="js/epargne.js?v=20261122c"></script>
-<script src="js/actifs.js?v=20261122c"></script>
-<script src="js/passifs.js?v=20261122c"></script>
-<script src="js/patrimoine.js?v=20261122c"></script>
-<script src="js/synthese.js?v=20261122c"></script>
-<script src="js/pea.js?v=20261122c"></script>
-<script src="js/market-data.js?v=20261122c"></script>
-<script src="js/salaire.js?v=20261122c"></script>
-<script src="js/immobilier.js?v=20261122c"></script>
-<script src="js/render.js?v=20261122c"></script>
-<script src="js/import-export.js?v=20261122c"></script>
-<script src="js/import-csv.js?v=20261122c"></script>
-<script src="js/patrimoine-detail.js?v=20261122c"></script>
-<script src="js/simulations.js?v=20261122c"></script>
-<script src="js/objectifs.js?v=20261122c"></script>
-<script src="js/demo-data.js?v=20261122c"></script>
-<script src="js/main.js?v=20261122c"></script>
+<script src="js/config.js?v=20261127a"></script>
+<script src="js/state.js?v=20261127a"></script>
+<script src="js/utils.js?v=20261127a"></script>
+<script src="js/theme.js?v=20261127a"></script>
+<script src="js/auth.js?v=20261127a"></script>
+<script src="js/nav.js?v=20261127a"></script>
+<script src="js/budget.js?v=20261127a"></script>
+<script src="js/comptes.js?v=20261127a"></script>
+<script src="js/liquidites.js?v=20261127a"></script>
+<script src="js/epargne.js?v=20261127a"></script>
+<script src="js/actifs.js?v=20261127a"></script>
+<script src="js/passifs.js?v=20261127a"></script>
+<script src="js/patrimoine.js?v=20261127a"></script>
+<script src="js/synthese.js?v=20261127a"></script>
+<script src="js/pea.js?v=20261127a"></script>
+<script src="js/market-data.js?v=20261127a"></script>
+<script src="js/salaire.js?v=20261127a"></script>
+<script src="js/immobilier.js?v=20261127a"></script>
+<script src="js/render.js?v=20261127a"></script>
+<script src="js/import-export.js?v=20261127a"></script>
+<script src="js/import-csv.js?v=20261127a"></script>
+<script src="js/patrimoine-detail.js?v=20261127a"></script>
+<script src="js/simulations.js?v=20261127a"></script>
+<script src="js/objectifs.js?v=20261127a"></script>
+<script src="js/demo-data.js?v=20261127a"></script>
+<script src="js/main.js?v=20261127a"></script>
 </body>
 </html>

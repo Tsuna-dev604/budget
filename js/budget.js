@@ -5,7 +5,8 @@ function updateCategChips() {
   const type = document.getElementById('bType').value;
   const list = type==='depense' ? CATEG_DEPENSE : CATEG_REVENU;
   const chips = document.getElementById('categChips');
-  chips.innerHTML = list.map(c=>`<span class="categ-chip" onclick="selectChip(this,'${c}')">${c}</span>`).join('');
+  const cur = document.getElementById('bCateg').value;
+  chips.innerHTML = list.map(c=>`<span class="categ-chip${c===cur?' sel':''}" onclick="selectChip(this,'${c}')">${c}</span>`).join('');
 }
 function selectChip(el, val) {
   document.querySelectorAll('.categ-chip').forEach(c=>c.classList.remove('sel'));
@@ -38,7 +39,9 @@ function saveBudget() {
   const date     = document.getElementById('bDate').value;
   const compteId = document.getElementById('bCompte').value||null;
   if (!label||!montant||montant<=0){notify('Champs invalides',true);return;}
-  if (editBudgetId) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)){notify('Date invalide',true);return;}
+  const modif = !!editBudgetId;
+  if (modif) {
     const b = state.budget.find(x=>x.id===editBudgetId);
     if (b) Object.assign(b,{label,categ,montant,type,date,compteId});
     editBudgetId = null;
@@ -47,7 +50,7 @@ function saveBudget() {
   }
   closeModal('modalBudget');
   ['bLabel','bCateg','bMontant'].forEach(id=>document.getElementById(id).value='');
-  notify(editBudgetId?'Opération modifiée':'Opération enregistrée');
+  notify(modif?'Opération modifiée':'Opération enregistrée');
   renderAll();
 }
 function editBudget(id) {
@@ -57,10 +60,10 @@ function editBudget(id) {
   editBudgetId = id;
   document.getElementById('budgetModalTitle').textContent = 'Modifier l\'opération';
   document.getElementById('bType').value = b.type;
-  updateCategChips();
+  document.getElementById('bCateg').value   = b.categ||'';
+  updateCategChips(); // après bCateg : la catégorie actuelle apparaît sélectionnée
   populateCompteSelects();
   document.getElementById('bLabel').value   = b.label;
-  document.getElementById('bCateg').value   = b.categ||'';
   document.getElementById('bMontant').value = b.montant;
   document.getElementById('bDate').value    = b.date;
   document.getElementById('bCompte').value  = b.compteId||'';
@@ -113,6 +116,53 @@ function buildCompteFilter() {
   sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'all';
   return sel.value;
 }
+// Filtre « catégorie » : la valeur est « type|catégorie » (« Autre » dépense ≠ « Autre » revenu).
+// Les options sont construites à partir des opérations déjà filtrées (année, mois, compte, type),
+// avec leur nombre ; la catégorie choisie reste proposée (0) même si le mois affiché n'en contient pas.
+const CATEG_FILTER_GROUPS = [
+  {type:'depense', label:'Dépenses', ordre:CATEG_DEPENSE},
+  {type:'revenu', label:'Revenus', ordre:CATEG_REVENU},
+  {type:'virement', label:'Virements d\'épargne', ordre:[]},
+];
+const categOf = b => b.categ || 'Autre';
+function buildCategFilter(items, typeFiltre) {
+  const sel = document.getElementById('filterBudgetCateg');
+  if (!sel) return null;
+  let cur = sel.value || 'all';
+  if (cur!=='all' && typeFiltre!=='all' && !cur.startsWith(typeFiltre+'|')) cur = 'all'; // type incompatible
+  const counts = {};
+  items.forEach(b=>{ const k = b.type+'|'+categOf(b); counts[k] = (counts[k]||0)+1; });
+  if (cur!=='all' && !counts[cur]) counts[cur] = 0;
+  const groups = CATEG_FILTER_GROUPS.filter(g=>typeFiltre==='all' || g.type===typeFiltre).map(g=>{
+    const rang = c => { const i = g.ordre.indexOf(c); return i<0 ? g.ordre.length : i; };
+    const cats = Object.keys(counts).filter(k=>k.startsWith(g.type+'|')).map(k=>k.slice(g.type.length+1))
+      .sort((a,b)=>rang(a)-rang(b) || a.localeCompare(b,'fr'));
+    return cats.length ? `<optgroup label="${esc(g.label)}">${cats.map(c=>{
+      const v = g.type+'|'+c;
+      return `<option value="${esc(v)}">${esc(c)} (${counts[v]})</option>`;
+    }).join('')}</optgroup>` : '';
+  }).join('');
+  sel.innerHTML = '<option value="all">Toutes catégories</option>' + groups;
+  sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'all';
+  sel.classList.toggle('filter-active', sel.value!=='all');
+  if (sel.value==='all') return null;
+  const i = sel.value.indexOf('|');
+  return {type:sel.value.slice(0,i), categ:sel.value.slice(i+1)};
+}
+// Clic sur le badge d'une catégorie dans la liste : filtre dessus (re-clic : retire le filtre).
+function setBudgetCategFilter(type, categ) {
+  const sel = document.getElementById('filterBudgetCateg');
+  if (!sel) return;
+  const v = type+'|'+categ;
+  const opt = [...sel.options].find(o=>o.value===v);
+  sel.value = (sel.value===v || !opt) ? 'all' : v;
+  renderBudgetTable();
+}
+function resetBudgetCategFilter() {
+  const sel = document.getElementById('filterBudgetCateg');
+  if (sel) sel.value = 'all';
+  renderBudgetTable();
+}
 function renderBudgetTable() {
   buildYearSelect();
   buildMonthTabs();
@@ -128,6 +178,8 @@ function renderBudgetTable() {
   if (compteFiltre==='budget') items = items.filter(b=>compteDansBudget(b.compteId));
   else if (compteFiltre==='none') items = items.filter(b=>!b.compteId);
   else if (compteFiltre!=='all') items = items.filter(b=>b.compteId===compteFiltre);
+  const categFiltre = buildCategFilter(items, type);
+  if (categFiltre) items = items.filter(b=>b.type===categFiltre.type && categOf(b)===categFiltre.categ);
   // Un compte (ou « sans compte ») choisi explicitement est totalisé tel quel, même hors budget.
   const filtreExplicite = compteFiltre!=='all' && compteFiltre!=='budget';
 
@@ -143,14 +195,24 @@ function renderBudgetTable() {
   s.className = 'card-value '+(solde>=0?'green':'red');
   const tauxEl = document.getElementById('bTauxEpargne');
   if (tauxEl) {
-    if (rev>0) { tauxEl.textContent = fmtPct(solde/rev*100,1); tauxEl.className = 'card-value '+(solde>=0?'green':'red'); }
+    // Taux d'épargne sur une seule catégorie : sans signification, on ne l'affiche pas.
+    if (rev>0 && !categFiltre) { tauxEl.textContent = fmtPct(solde/rev*100,1); tauxEl.className = 'card-value '+(solde>=0?'green':'red'); }
     else { tauxEl.textContent = '—'; tauxEl.className = 'card-value'; }
   }
   const virEl = document.getElementById('bVirements');
   if (virEl) virEl.textContent = vir>0 ? `dont ${fmt(vir)} virés vers l'épargne` : '';
 
   const lbl = month==='all'?`Année ${year}`:`${MOIS[parseInt(month)]} ${year}`;
-  document.getElementById('budgetMonthLabel').textContent = lbl;
+  document.getElementById('budgetMonthLabel').textContent = lbl + (categFiltre ? ` · ${categFiltre.categ}` : '');
+  const categInfo = document.getElementById('budgetCategFilterInfo');
+  if (categInfo) {
+    categInfo.style.display = categFiltre ? 'flex' : 'none';
+    if (categFiltre) {
+      const total = items.filter(b=>filtreExplicite || compteDansBudget(b.compteId)).reduce((s,b)=>s+b.montant,0);
+      document.getElementById('budgetCategFilterText').textContent =
+        `${categFiltre.categ} : ${items.length} opération${items.length>1?'s':''} · ${fmt(total)}`;
+    }
+  }
 
   const tbody = document.getElementById('budgetTbody');
   tbody.innerHTML = items.sort((a,b)=>b.date.localeCompare(a.date)).map(b=>`
@@ -158,7 +220,7 @@ function renderBudgetTable() {
       <td>${b.type==='depense'?`<input type="checkbox" class="budget-check" data-id="${b.id}" ${checkedDepenseIds.has(b.id)?'checked':''} onchange="toggleDepenseCheck('${b.id}', this.checked)">`:''}</td>
       <td class="highlight">${esc(b.date)}</td>
       <td class="highlight">${(b._recId||b._versementActif)?'🔁 ':''}${esc(b.label)}</td>
-      <td><span class="badge" style="background:${CATEG_COLORS[b.categ]||'rgba(255,255,255,0.07)'}22;color:${CATEG_COLORS[b.categ]||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
+      <td><span class="badge categ-filter-badge" data-type="${esc(b.type)}" data-categ="${esc(categOf(b))}" onclick="setBudgetCategFilter(this.dataset.type, this.dataset.categ)" title="Filtrer sur cette catégorie" style="background:${categColor(b.categ)||'rgba(255,255,255,0.07)'}22;color:${categColor(b.categ)||'var(--text3)'}">${esc(b.categ||'—')}</span></td>
       <td>${b.compteId?`<span class="badge badge-blue">${esc(compteLabel(b.compteId))}</span>${compteDansBudget(b.compteId)?'':' <span class="badge">hors budget</span>'}`:'<span style="color:var(--text3)">—</span>'}</td>
       <td>${b.type==='revenu'?'<span class="badge badge-green">Revenu</span>':b.type==='virement'?'<span class="badge badge-blue">Épargne</span>':'<span class="badge badge-red">Dépense</span>'}</td>
       <td class="${b.type==='revenu'?'green':b.type==='virement'?'blue':'red'}">${b.type==='revenu'?'+':'−'}${fmt(b.montant)}</td>
@@ -287,7 +349,7 @@ function renderPrevisionWidget() {
   const lblEl = document.getElementById('previsionRefLabel');
   if (lblEl) lblEl.textContent = `${MOIS[parseInt(ref.slice(5,7))]} ${ref.slice(0,4)}`;
 
-  const reelParCateg = {};
+  const reelParCateg = Object.create(null);
   getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(ref)).forEach(b=>{
     reelParCateg[b.categ||'Autre'] = (reelParCateg[b.categ||'Autre']||0)+b.montant;
   });
@@ -311,7 +373,7 @@ function renderPrevisionWidget() {
     }).sort((a,b)=>b.ecart-a.ecart);
     tbody.innerHTML = rows.map(r=>`
       <tr>
-        <td class="highlight"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${esc(r.c)}</td>
+        <td class="highlight"><span style="color:${categColor(r.c)||'var(--text3)'}">●</span> ${esc(r.c)}</td>
         <td><input type="number" min="0" step="1" value="${r.prevu||''}" placeholder="0" style="width:110px;padding:6px 10px;font-size:12px" data-categ="${esc(r.c)}" onchange="updatePrevision(this.dataset.categ, this.value)"></td>
         <td class="gold">${fmt(r.reel)}</td>
         <td class="${r.ecart>0?'red':'green'}">${r.ecart>0?'+':''}${fmt(r.ecart)}</td>
@@ -357,7 +419,7 @@ function detectAnomalies() {
 
   // 1. Catégorie dont la dépense du mois dépasse nettement sa moyenne récente
   const refItems = getBudgetOps().filter(b=>b.type==='depense'&&b.date.startsWith(ref));
-  const parCateg = {};
+  const parCateg = Object.create(null);
   refItems.forEach(b=>{ const c=b.categ||'Autre'; parCateg[c]=(parCateg[c]||0)+b.montant; });
 
   Object.entries(parCateg).forEach(([categ, montant])=>{
@@ -416,7 +478,7 @@ function getEvolutionDepensesCategories(nbMois=12) {
   let ym = today().slice(0,7);
   for (let i=0;i<nbMois;i++) { months.unshift(ym); ym = prevYm(ym); }
   const inWindow = new Set(months);
-  const data = {}; // catégorie -> {AAAA-MM: total}
+  const data = Object.create(null); // catégorie -> {AAAA-MM: total}
   getBudgetOps().forEach(b=>{
     if (b.type!=='depense') return;
     const m = b.date.slice(0,7);
@@ -461,7 +523,7 @@ function renderEvolutionCategories() {
   const labels = months.map(m=>new Date(m+'-01T00:00:00').toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
   const TOP = 6;
   const top = rows.slice(0,TOP), reste = rows.slice(TOP);
-  const datasets = top.map(r=>({label:r.c, data:r.vals, backgroundColor:CATEG_COLORS[r.c]||'#95a5a6', borderWidth:0}));
+  const datasets = top.map(r=>({label:r.c, data:r.vals, backgroundColor:categColor(r.c)||'#95a5a6', borderWidth:0}));
   if (reste.length) datasets.push({label:'Autres', data:months.map((_,i)=>reste.reduce((s,r)=>s+r.vals[i],0)), backgroundColor:'#6b7280', borderWidth:0});
 
   if (chartEvolCateg) { chartEvolCateg.destroy(); chartEvolCateg=null; }
@@ -489,7 +551,7 @@ function renderEvolutionCategories() {
     <thead><tr><th>Catégorie</th>${labels.map(th).join('')}${th('Moy./mois')}${th('Tendance')}</tr></thead>
     <tbody>
       ${rows.map(r=>`<tr>
-        <td class="highlight" style="white-space:nowrap"><span style="color:${CATEG_COLORS[r.c]||'var(--text3)'}">●</span> ${esc(r.c)}</td>
+        <td class="highlight" style="white-space:nowrap"><span style="color:${categColor(r.c)||'var(--text3)'}">●</span> ${esc(r.c)}</td>
         ${r.vals.map(v=>`<td style="${mono}">${v>0?fmt(v,0):'<span style="color:var(--text3)">—</span>'}</td>`).join('')}
         <td style="${mono};color:var(--gold)">${r.moyenne!==null?fmt(r.moyenne,0):'—'}</td>
         <td style="${mono};color:${r.tendance===null?'var(--text3)':(r.tendance>0?'var(--red)':'var(--green)')}">${r.tendance===null?'—':(r.tendance>0?'▲ +':'▼ ')+fmtPct(r.tendance,0)}</td>

@@ -124,7 +124,7 @@ function renderVirementsEpargne() {
           <td class="highlight">${esc(a.label)}</td>
           <td>${debite ? esc(compteLabel(a.compteSourceId)) : '<span style="color:var(--text3)" title="Le livret est crédité sans débiter de compte suivi">Hors comptes suivis</span>'}</td>
           <td class="gold">${fmt(a.mensuel)}</td>
-          <td>le ${a.jourVersement||1}</td>
+          <td>le ${esc(a.jourVersement||1)}</td>
           <td>${prochain ? (prochain<=now ? '<span class="badge badge-gold">À appliquer</span>' : fmtDateFr(prochain)) : '—'}</td>
           <td style="color:var(--text3)">${a.dernierVersementDate ? fmtDateFr(a.dernierVersementDate) : '—'}</td>
           <td><div class="row-actions">

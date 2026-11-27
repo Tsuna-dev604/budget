@@ -250,6 +250,11 @@ select option{background:var(--bg3);color:var(--text)}
 .empty-state-text{font-size:13px;max-width:420px;margin:0 auto;line-height:1.7}
 
 /* ═══════ RESPONSIVE — sidebar devient un drawer mobile ═══════ */
+/* Filtre catégorie du Budget : select mis en évidence quand un filtre est actif ; badges cliquables */
+select.filter-active{border-color:var(--gold);color:var(--gold)}
+.categ-filter-badge{cursor:pointer}
+.categ-filter-badge:hover{outline:1px solid currentColor;outline-offset:1px}
+
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .2s ease;z-index:130}
   .sidebar.open{transform:translateX(0)}

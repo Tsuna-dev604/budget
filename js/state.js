@@ -25,5 +25,9 @@ const CATEG_COLORS = {
   'Remboursement':'#f39c12'
 };
 
+// Couleur d'une catégorie, ou undefined. hasOwnProperty : une catégorie libre nommée « constructor »
+// ou « toString » ne doit pas renvoyer une fonction du prototype dans un attribut style.
+const categColor = c => Object.prototype.hasOwnProperty.call(CATEG_COLORS, c) ? CATEG_COLORS[c] : undefined;
+
 let currentBudgetMonth = 'all';
 let opActifId = null;
