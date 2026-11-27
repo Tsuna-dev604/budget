@@ -51,6 +51,9 @@ function deletePassif(id) {
   const lie = p && p._immoRef && state.immoBiens.find(b=>b.id===p._immoRef);
   if (!confirm(lie ? `Ce crédit est lié au bien « ${lie.label} ». Le supprimer ramène son capital restant dû à 0. Continuer ?` : 'Supprimer ce passif ?')) return;
   state.passifs = state.passifs.filter(x=>x.id!==id);
+  // Sans cette remise à zéro, syncBiensFromPassifs() voit encore un crédit sur le bien
+  // et recrée (ou réadopte) aussitôt un passif : la suppression n'avait aucun effet.
+  if (lie) { lie.creditCRD = 0; lie.creditMens = 0; }
   syncBiensFromPassifs();
   closeModal('modalPassif');
   renderAll();
@@ -62,7 +65,7 @@ function renderPassifs() {
         <td class="red">${fmt(p.crd)}</td>
         <td>${fmt(p.mensualite)}/mois${creditCapitalLabel(p)}</td>
         <td>${fmtPct(p.taux)}</td>
-        <td>${p.echeance||'—'}</td>
+        <td>${esc(p.echeance||'—')}</td>
         <td><div class="row-actions">
           <button class="icon-btn" onclick="openEditPassif('${p.id}')" title="Modifier">✎</button>
           <button class="icon-btn del" onclick="deletePassif('${p.id}')" title="Supprimer">✕</button>

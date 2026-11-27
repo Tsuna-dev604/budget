@@ -9,7 +9,7 @@ Tout le code est en HTML, CSS et JavaScript, sans étape de build ni framework. 
 | Page | Contenu |
 |---|---|
 | **Synthèse** | Patrimoine net, dettes, évolution dans le temps, « Où va mon argent ? » (mois, trimestre, année) |
-| **Budget** | Revenus et dépenses par catégorie, récapitulatifs par période, évolution des dépenses par catégorie sur 12 mois, import CSV |
+| **Budget** | Revenus et dépenses, filtres par compte et par catégorie, récapitulatifs par période, évolution des dépenses par catégorie sur 12 mois, import CSV |
 | **Liquidités** | Comptes bancaires et soldes à ce jour |
 | **Patrimoine** | Actifs (livrets, assurance-vie, PEL, crypto…), passifs, allocation, variation mensuelle |
 | **Immobilier** | Biens, crédits, loyers, locataires, charges |
@@ -122,11 +122,12 @@ Les scripts sont chargés dans l'ordre de `index.html` et partagent un état glo
 
 - Les données sont enregistrées dans votre projet Supabase, sous votre compte.
 - **Export / import JSON** (Paramètres) : pensez à sauvegarder régulièrement.
-  - Le fichier exporté est une enveloppe `{app, schemaVersion, exportedAt, counts, checksum, data}` ; `checksum` est l'empreinte SHA-256 de `data` (JSON canonique, clés triées). Une modification manuelle du fichier est détectée et l'import est refusé.
+  - Le fichier exporté est une enveloppe `{app, schemaVersion, exportedAt, counts, checksum, data}` ; `checksum` est l'empreinte SHA-256 de `data` (JSON canonique, clés triées). Une empreinte absente ou différente (fichier modifié à la main) est signalée dans la confirmation, sans bloquer l'import : la validation de la forme des données reste, elle, obligatoire.
   - La clé Alpha Vantage n'est jamais écrite dans l'export ; à l'import, la clé locale est conservée.
-  - L'import vérifie la taille (≤ 20 Mo), la version de schéma, l'empreinte, la forme des données (types, énumérations, identifiants `[A-Za-z0-9_.-]{1,64}`), demande confirmation avec un récapitulatif, puis **télécharge automatiquement une sauvegarde de l'état actuel** avant de le remplacer. Les clés inconnues sont ignorées.
+  - L'import vérifie la taille (≤ 20 Mo), la version de schéma, la forme des données (types, énumérations, identifiants `[A-Za-z0-9_.-]{1,64}`), demande confirmation avec un récapitulatif, puis **télécharge automatiquement une sauvegarde de l'état actuel** avant de le remplacer. Les clés inconnues sont ignorées.
   - Les anciens exports (JSON brut, sans empreinte) restent importables, avec un avertissement.
 - Si le chargement cloud échoue, la synchronisation est suspendue pour ne pas écraser vos données par un état vide.
+- Plusieurs onglets ou appareils : chaque sauvegarde vérifie que la version en ligne n'a pas changé depuis son chargement (`updated_at`). Un onglet resté ouvert reprend la dernière version quand il revient au premier plan ; en cas de modification simultanée, rien n'est écrasé : la synchronisation est suspendue et l'application propose de recharger ou de télécharger une copie locale.
 - L'import CSV est traité **dans le navigateur** : le fichier n'est envoyé à aucun service. Les libellés importés sont nettoyés et échappés à l'affichage.
 - **Content-Security-Policy** (balise `<meta>` de `index.html`) : scripts uniquement depuis l'origine du site, connexions limitées à votre projet Supabase et à Alpha Vantage. Si vous changez d'URL Supabase dans `js/config.js`, mettez aussi à jour `connect-src` dans cette balise. `'unsafe-inline'` reste nécessaire tant que des gestionnaires `onclick="…"` existent : la CSP est une défense en profondeur, la protection principale est l'échappement (`esc()`) et la validation des identifiants à l'import.
 - Les appels de cours ne transmettent que le symbole du titre et votre clé Alpha Vantage.

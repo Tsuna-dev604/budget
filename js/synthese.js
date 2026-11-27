@@ -244,7 +244,7 @@ function renderPointsSurveiller() {
 
 // Moyenne des dépenses mensuelles sur les N derniers mois complets (hors mois en cours par défaut).
 // offset=0 inclut le mois en cours dans la fenêtre ; offset=1 l'exclut (fenêtre glissée d'un mois).
-function getMoyenneDepensesMensuelles(nbMois, offsetMois=0) {
+function getMoyenneDepensesMensuelles(nbMois, offsetMois=1) {
   const now = new Date();
   let total = 0, count = 0;
   for (let i=offsetMois; i<offsetMois+nbMois; i++) {

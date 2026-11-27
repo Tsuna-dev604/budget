@@ -166,7 +166,7 @@ function financierRow(a) {
   return `<tr>
     <td class="highlight">${esc(a.label)}</td>
     <td class="gold">${fmt(a.valeur)}</td>
-    <td style="color:var(--green);font-family:var(--font-mono)">${m>0?'+'+fmt(m)+'/m <span style="color:var(--text3);font-size:10px">le '+(a.jourVersement||1)+'</span>':'—'}</td>
+    <td style="color:var(--green);font-family:var(--font-mono)">${m>0?'+'+fmt(m)+'/m <span style="color:var(--text3);font-size:10px">le '+esc(a.jourVersement||1)+'</span>':'—'}</td>
     <td>${fmtPct(a.taux||0)}</td>
     <td>${fiscalLabel(a.fiscal||'exonere')}</td>
     <td class="green">${fmtPct(rNet)}</td>

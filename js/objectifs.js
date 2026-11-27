@@ -142,7 +142,7 @@ function renderObjectifs() {
       </div>
       <div class="progress-track"><div class="progress-fill${atteint?' over':''}" style="width:${Math.min(100,Math.max(0,pct))}%"></div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px">
-        <span style="color:var(--text3)">${fmtPct(pct,0)}${o.echeance?' · échéance '+new Date(o.echeance+'-01').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):''}</span>
+        <span style="color:var(--text3)">${fmtPct(pct,0)}${o.echeance?' · échéance '+new Date(o.echeance+'-01T00:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):''}</span>
         ${effortHtml}
       </div>
     </div>`;

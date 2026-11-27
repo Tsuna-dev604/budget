@@ -381,7 +381,7 @@ function renderRendement() {
               const freqMens={mensuel:1,trimestriel:1/3,annuel:1/12,ponctuel:0};
               const annuel = c.montant*(freqMens[c.freq]||0)*12;
               return `<div class="alloc-row"><span style="color:var(--text3);font-size:12px">${CHARGE_ICONS[c.type]||'📦'} ${esc(c.label)}</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(annuel)}/an</span></div>`;
-            }).join('')+'<div class="alloc-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:8px"><span style="font-weight:500">Total charges annuelles</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(chargesM*12)}</span></div>'
+            }).join('')+`<div class="alloc-row" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:8px"><span style="font-weight:500">Total charges annuelles</span><span style="font-family:var(--font-mono);color:var(--red)">−${fmt(chargesM*12)}</span></div>`
             :'<div style="color:var(--text3);font-size:12px;padding:8px">Aucune charge enregistrée pour ce bien.</div>'
           }
         </div>
