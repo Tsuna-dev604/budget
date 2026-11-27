@@ -163,7 +163,7 @@ function financierRow(a) {
   const v1   = compoundWithContrib(a.valeur||0, rNet, 1, m);
   const v5   = compoundWithContrib(a.valeur||0, rNet, 5, m);
   const v10  = compoundWithContrib(a.valeur||0, rNet, 10, m);
-  return `<tr>
+  return `<tr data-acc="actif:${a.id}">
     <td class="highlight">${esc(a.label)}</td>
     <td class="gold">${fmt(a.valeur)}</td>
     <td style="color:var(--green);font-family:var(--font-mono)">${m>0?'+'+fmt(m)+'/m <span style="color:var(--text3);font-size:10px">le '+esc(a.jourVersement||1)+'</span>':'—'}</td>
@@ -181,7 +181,7 @@ function immoRow(a) {
   const v1  = compoundWithContrib(a.valeur||0, rNet, 1, 0);
   const v5  = compoundWithContrib(a.valeur||0, rNet, 5, 0);
   const v10 = compoundWithContrib(a.valeur||0, rNet, 10, 0);
-  return `<tr>
+  return `<tr data-acc="actif:${a.id}">
     <td class="highlight">${esc(a.label)}</td>
     <td class="gold">${fmt(a.valeur)}</td>
     <td style="color:var(--green);font-family:var(--font-mono)">${loyer>0?fmt(loyer)+'/m':'—'}</td>
@@ -201,7 +201,7 @@ function physRow(a) {
   const evol  = a.evolPhys||0;
   const v5    = compound(val, evol, 5);
   const v10   = compound(val, evol, 10);
-  return `<tr>
+  return `<tr data-acc="actif:${a.id}">
     <td class="highlight">${esc(a.label)}</td>
     <td>${SUBTYPE_ICONS[a.subtype]||'📦'} <span style="color:var(--text3);font-size:11px">${esc(a.subtype||'autre')}</span></td>
     <td>${fmt(achat)}</td>

@@ -60,7 +60,7 @@ function deletePassif(id) {
 }
 function renderPassifs() {
   document.getElementById('passifTbody').innerHTML = state.passifs.length
-    ? state.passifs.map(p=>`<tr>
+    ? state.passifs.map(p=>`<tr data-acc="passif:${p.id}">
         <td class="highlight">${p._immoRef?'🏠 ':''}${esc(p.label)}</td>
         <td class="red">${fmt(p.crd)}</td>
         <td>${fmt(p.mensualite)}/mois${creditCapitalLabel(p)}</td>

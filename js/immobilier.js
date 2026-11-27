@@ -219,7 +219,7 @@ function renderImmoBiensList() {
     const equity = (b.valeur||0)-(b.creditCRD||0);
     const cfColor = cashflow>=0?'var(--green)':'var(--red)';
     const netApresImpotsBien = (b.loyer||0)*(1-taxRateBien) - chargesM - (b.creditMens||0);
-    return `<div class="immo-card">
+    return `<div class="immo-card" data-acc="bien:${b.id}">
       <div class="immo-card-header">
         <div>
           <div class="immo-prop-title">🏠 ${esc(b.label)}</div>

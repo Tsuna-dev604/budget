@@ -134,7 +134,7 @@ function renderComptes() {
     const rev = state.budget.filter(b=>b.compteId===c.id&&b.type==='revenu').reduce((s,b)=>s+b.montant,0);
     const dep = state.budget.filter(b=>b.compteId===c.id&&b.type==='depense').reduce((s,b)=>s+b.montant,0);
     const vir = state.budget.filter(b=>b.compteId===c.id&&b.type==='virement').reduce((s,b)=>s+b.montant,0);
-    return `<div class="card">
+    return `<div class="card" data-acc="compte:${c.id}">
       <div class="card-header">
         <span class="card-title">🏦 ${esc(c.label)}</span>
         <div class="row-actions">
