@@ -25,7 +25,7 @@
 <script src="vendor/supabase-js-2.119.2.umd.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261127a">
+<link rel="stylesheet" href="css/style.css?v=20261127b">
 </head>
 <body>
 
@@ -101,40 +101,44 @@
 
     <!-- ═══════ SYNTHÈSE ═══════ -->
     <section id="synthese" class="section active">
-      <h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
-      <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><h2 class="section-title">Vue d'ensemble du Patrimoine</h2>
+        <p class="section-subtitle" id="lastUpdated">Dernière mise à jour : —</p></div>
+        <button class="btn" onclick="openSyntheseAdmin()" title="Choisir les informations affichées et leur ordre">⚙ Personnaliser</button>
+      </div>
 
       <!-- Ligne 1 : 5 KPI essentiels -->
-      <div class="kpi-grid" id="kpiGrid">
-        <div class="card card-sm">
+      <div class="kpi-grid kpi-grid-auto" id="kpiGrid">
+        <div class="card card-sm" data-kpi="net">
           <div class="card-title">Patrimoine Net</div>
           <div class="card-value gold" id="kpi-net">—</div>
           <div class="card-sub" id="kpi-net-sub">—</div>
         </div>
-        <div class="card card-sm">
+        <div class="card card-sm" data-kpi="var12">
           <div class="card-title">Variation 12 mois</div>
           <div class="card-value" id="kpi-var12">—</div>
           <div class="card-sub" id="kpi-var12-sub">—</div>
         </div>
-        <div class="card card-sm">
+        <div class="card card-sm" data-kpi="epargne">
           <div class="card-title">Capacité d'Épargne</div>
           <div class="card-value green" id="kpi-epargne">—</div>
           <div class="card-sub">Ce mois-ci</div>
         </div>
-        <div class="card card-sm">
+        <div class="card card-sm" data-kpi="liquid">
           <div class="card-title">Liquidités Disponibles</div>
           <div class="card-value blue" id="kpi-liquid2">—</div>
           <div class="card-sub">Livrets, cash, comptes</div>
         </div>
-        <div class="card card-sm">
+        <div class="card card-sm" data-kpi="dette">
           <div class="card-title">Dettes Restantes</div>
           <div class="card-value red" id="kpi-dette">—</div>
           <div class="card-sub">Capital restant dû</div>
         </div>
       </div>
 
-      <!-- Ligne 2 : évolution du patrimoine -->
-      <div class="card" style="margin-bottom:16px">
+      <!-- Blocs : ordre, largeur et visibilité réglables (Paramètres › Page Synthèse, voir js/synthese-layout.js) -->
+      <div class="synthese-blocks" id="syntheseBlocks">
+      <div class="card synthese-block span-full" data-block="evolution">
         <div class="card-header" style="flex-wrap:wrap;gap:10px">
           <span class="card-title">Évolution du Patrimoine</span>
           <div class="month-tabs" style="margin-bottom:0" id="periodeButtons">
@@ -160,9 +164,7 @@
         </div>
       </div>
 
-      <!-- Ligne 3 : où va / où est mon argent -->
-      <div class="grid-2" style="margin-bottom:16px">
-        <div class="card">
+      <div class="card synthese-block" data-block="depenses">
           <div class="card-header" style="flex-wrap:wrap;gap:8px">
             <div><span class="card-title">Où va mon argent ?</span><div id="depensesPeriodeLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--gold);margin-top:4px"></div></div>
             <div class="month-tabs" style="margin-bottom:0">
@@ -172,30 +174,24 @@
             </div>
           </div>
           <div id="depensesWidgetList"></div>
-        </div>
-        <div>
-          <div class="card" style="margin-bottom:16px">
+      </div>
+      <div class="card synthese-block" data-block="allocation">
             <div class="card-header"><span class="card-title">Où est mon argent ?</span></div>
             <div class="chart-wrap" style="height:180px"><canvas id="chartAlloc"></canvas></div>
             <div id="allocList" style="margin-top:12px"></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><span class="card-title">💎 Biens physiques</span><span class="badge badge-purple">Hors argent en banque</span></div>
-            <div id="physiquesWidget"></div>
-          </div>
-        </div>
       </div>
-
-      <!-- Ligne 4 : flux du mois -->
-      <div class="card" style="margin-bottom:16px">
+      <div class="card synthese-block span-full" data-block="flux">
         <div class="card-header"><span class="card-title">Flux du mois</span></div>
         <div id="fluxMoisWrap"></div>
       </div>
-
-      <!-- Ligne 5 : points à surveiller -->
-      <div class="card">
+      <div class="card synthese-block" data-block="physiques">
+            <div class="card-header"><span class="card-title">💎 Biens physiques</span><span class="badge badge-purple">Hors argent en banque</span></div>
+            <div id="physiquesWidget"></div>
+      </div>
+      <div class="card synthese-block" data-block="points">
         <div class="card-header"><span class="card-title">Points à surveiller</span></div>
         <div id="pointsSurveillerList"></div>
+      </div>
       </div>
     </section>
 
@@ -747,6 +743,24 @@
             <button class="btn" onclick="exportData()">↓ Exporter (JSON)</button>
             <button class="btn" onclick="document.getElementById('importFile').click()">↑ Importer un fichier JSON</button>
             <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px" id="syntheseAdminCard">
+        <div class="card-header">
+          <span class="card-title">Panel admin — Page Synthèse</span>
+          <button class="btn" onclick="resetSyntheseLayout()" title="Revenir à la disposition par défaut">Disposition par défaut</button>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Cochez les informations à afficher, réordonnez-les avec ↑ ↓ et choisissez la largeur des blocs (½ = deux blocs côte à côte). Rien n'est supprimé : une information masquée peut être réaffichée à tout moment.</p>
+        <div class="grid-2" style="align-items:start">
+          <div>
+            <div class="layout-admin-title">Indicateurs (ligne du haut)</div>
+            <div id="syntheseAdminKpis" class="layout-admin-list"></div>
+          </div>
+          <div>
+            <div class="layout-admin-title">Blocs</div>
+            <div id="syntheseAdminBlocks" class="layout-admin-list"></div>
           </div>
         </div>
       </div>
@@ -1352,31 +1366,32 @@
 
 
 <!-- ═══════ SCRIPTS — ORDRE DE CHARGEMENT IMPORTANT ═══════ -->
-<script src="js/config.js?v=20261127a"></script>
-<script src="js/state.js?v=20261127a"></script>
-<script src="js/utils.js?v=20261127a"></script>
-<script src="js/theme.js?v=20261127a"></script>
-<script src="js/auth.js?v=20261127a"></script>
-<script src="js/nav.js?v=20261127a"></script>
-<script src="js/budget.js?v=20261127a"></script>
-<script src="js/comptes.js?v=20261127a"></script>
-<script src="js/liquidites.js?v=20261127a"></script>
-<script src="js/epargne.js?v=20261127a"></script>
-<script src="js/actifs.js?v=20261127a"></script>
-<script src="js/passifs.js?v=20261127a"></script>
-<script src="js/patrimoine.js?v=20261127a"></script>
-<script src="js/synthese.js?v=20261127a"></script>
-<script src="js/pea.js?v=20261127a"></script>
-<script src="js/market-data.js?v=20261127a"></script>
-<script src="js/salaire.js?v=20261127a"></script>
-<script src="js/immobilier.js?v=20261127a"></script>
-<script src="js/render.js?v=20261127a"></script>
-<script src="js/import-export.js?v=20261127a"></script>
-<script src="js/import-csv.js?v=20261127a"></script>
-<script src="js/patrimoine-detail.js?v=20261127a"></script>
-<script src="js/simulations.js?v=20261127a"></script>
-<script src="js/objectifs.js?v=20261127a"></script>
-<script src="js/demo-data.js?v=20261127a"></script>
-<script src="js/main.js?v=20261127a"></script>
+<script src="js/config.js?v=20261127b"></script>
+<script src="js/state.js?v=20261127b"></script>
+<script src="js/utils.js?v=20261127b"></script>
+<script src="js/theme.js?v=20261127b"></script>
+<script src="js/auth.js?v=20261127b"></script>
+<script src="js/nav.js?v=20261127b"></script>
+<script src="js/budget.js?v=20261127b"></script>
+<script src="js/comptes.js?v=20261127b"></script>
+<script src="js/liquidites.js?v=20261127b"></script>
+<script src="js/epargne.js?v=20261127b"></script>
+<script src="js/actifs.js?v=20261127b"></script>
+<script src="js/passifs.js?v=20261127b"></script>
+<script src="js/patrimoine.js?v=20261127b"></script>
+<script src="js/synthese.js?v=20261127b"></script>
+<script src="js/synthese-layout.js?v=20261127b"></script>
+<script src="js/pea.js?v=20261127b"></script>
+<script src="js/market-data.js?v=20261127b"></script>
+<script src="js/salaire.js?v=20261127b"></script>
+<script src="js/immobilier.js?v=20261127b"></script>
+<script src="js/render.js?v=20261127b"></script>
+<script src="js/import-export.js?v=20261127b"></script>
+<script src="js/import-csv.js?v=20261127b"></script>
+<script src="js/patrimoine-detail.js?v=20261127b"></script>
+<script src="js/simulations.js?v=20261127b"></script>
+<script src="js/objectifs.js?v=20261127b"></script>
+<script src="js/demo-data.js?v=20261127b"></script>
+<script src="js/main.js?v=20261127b"></script>
 </body>
 </html>
