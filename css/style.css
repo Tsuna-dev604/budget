@@ -300,10 +300,39 @@ body.layout-resize-active,body.layout-resize-active *{cursor:nwse-resize!importa
 @keyframes layoutFlash{0%,40%{outline:2px solid var(--gold);outline-offset:4px}100%{outline-color:transparent}}
 .layout-flash{animation:layoutFlash 1.4s ease}
 
+/* ── Comptes dans la barre latérale (js/sidebar-accounts.js) ── */
+.sidebar-accounts{margin:14px 2px 4px;padding-top:12px;border-top:1px solid var(--border)}
+html.sidebar-collapsed .sidebar-accounts{display:none}
+.sacc-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:0 8px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.sacc-head .sacc-amount{font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);font-weight:600}
+.sacc-group-row{position:relative;display:flex;align-items:center;border-radius:8px}
+.sacc-group-row:hover{background:var(--bg4)}
+.sacc-group-toggle,.sacc-item,.sacc-empty{display:flex;align-items:center;gap:6px;width:100%;min-width:0;background:none;border:0;color:var(--text2);font-family:var(--font-body);font-size:12px;cursor:pointer;text-align:left}
+.sacc-group-toggle{flex:1;padding:7px 4px 7px 6px;font-weight:600;color:var(--text)}
+.sacc-chevron{width:6px;height:6px;margin:0 3px 0 2px;flex-shrink:0;border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);transform:rotate(-45deg);transition:transform .15s}
+.sacc-group.open .sacc-chevron{transform:rotate(45deg)}
+.sacc-icon{font-size:13px;flex-shrink:0}
+.sacc-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sacc-amount{flex-shrink:0;font-family:var(--font-mono);font-size:11px;color:var(--text2);white-space:nowrap}
+.sacc-group-toggle .sacc-amount{color:var(--text)}
+.sacc-amount.neg{color:var(--red)!important}
+/* ＋ : par-dessus le total au survol, sans réserver de place (les libellés gardent toute la largeur) */
+.sacc-add{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--gold);cursor:pointer;font-size:13px;display:none}
+.sacc-group-row:hover .sacc-add,.sacc-add:focus-visible{display:block}
+@media(hover:none){.sacc-add{display:block;position:static;transform:none;margin-right:4px;flex-shrink:0}}
+.sacc-items{margin:0 0 6px 16px;padding-left:8px;border-left:1px solid var(--border)}
+.sacc-item{padding:6px 8px;border-radius:6px}
+.sacc-item:hover{background:var(--bg4);color:var(--text)}
+.sacc-tag{font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase}
+.sacc-empty{padding:8px;color:var(--gold)}
+@keyframes accFlash{0%,35%{background:rgba(91,141,239,.22)}100%{background:transparent}}
+.acc-flash,.acc-flash>td{animation:accFlash 1.8s ease}
+
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .2s ease;z-index:130}
   .sidebar.open{transform:translateX(0)}
   html.sidebar-collapsed .sidebar{width:260px}
+  html.sidebar-collapsed .sidebar .sidebar-accounts{display:block}
   html.sidebar-collapsed .sidebar .nav-label,
   html.sidebar-collapsed .sidebar .logo-text{display:flex}
   html.sidebar-collapsed .sidebar .logo-text{flex-direction:column}

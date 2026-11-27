@@ -424,7 +424,7 @@ function renderPeaComptesList() {
       </tr>${open?renderPeaAchatsDetail(r):''}`;
     }).join('') : '<tr><td colspan="13" style="text-align:center;color:var(--text3);padding:16px">Aucune position dans ce compte</td></tr>';
 
-    return `<div class="immo-card">
+    return `<div class="immo-card" data-acc="pea:${c.id}">
       <div class="immo-card-header">
         <div>
           <div class="immo-prop-title">💼 ${esc(c.nom)} <span class="badge ${c.type==='CTO'?'badge-blue':'badge-gold'}" style="margin-left:6px">${compteTypeLabel(c.type)}</span></div>
