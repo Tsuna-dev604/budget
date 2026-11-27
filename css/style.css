@@ -255,21 +255,50 @@ select.filter-active{border-color:var(--gold);color:var(--gold)}
 .categ-filter-badge{cursor:pointer}
 .categ-filter-badge:hover{outline:1px solid currentColor;outline-offset:1px}
 
-/* Page Synthèse : blocs sur 2 colonnes, ordre / largeur / visibilité réglables (js/synthese-layout.js) */
+/* ── Page Synthèse : grille de 12 colonnes, disposition réglable sur la page (js/synthese-layout.js) ── */
 .kpi-grid-auto{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.synthese-blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
-.synthese-blocks>.synthese-block{margin:0;min-width:0}
-.synthese-blocks>.span-full{grid-column:1/-1}
-/* Panneau d'administration de la disposition */
-.layout-admin-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
-.layout-admin-list{display:flex;flex-direction:column;gap:6px}
-.layout-row{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px}
-.layout-row.is-hidden .layout-row-label span{color:var(--text3);text-decoration:line-through}
-.layout-row-label{display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;margin:0}
-.layout-row .icon-btn:disabled{opacity:.3;cursor:default}
-.layout-width{display:flex;border:1px solid var(--border2);border-radius:14px;overflow:hidden}
-.layout-width button{background:none;border:0;padding:3px 9px;font-family:var(--font-mono);font-size:10px;color:var(--text3);cursor:pointer}
-.layout-width button.active{background:var(--gold);color:#fff}
+.synthese-blocks{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:start}
+.synthese-blocks>.synthese-block{margin:0;min-width:0;grid-column:span 12}
+/* Hauteur choisie : la carte est fixée, le graphique prend la place restante, le reste défile si besoin */
+.synthese-block.has-h{height:var(--block-h);display:flex;flex-direction:column}
+.synthese-block.has-h>:not(.card-header){min-height:0}
+.synthese-block.has-h>:not(.card-header):not(.chart-wrap){overflow-y:auto}
+.synthese-block.has-h>.chart-wrap{flex:1 1 0;height:auto!important;min-height:100px}
+.synthese-toolbar{display:flex;gap:8px;align-items:center}
+.layout-empty{display:none;padding:40px;text-align:center;color:var(--text3);border:1px dashed var(--border2);border-radius:var(--radius);font-size:13px}
+/* Menu « ＋ Ajouter » */
+.layout-menu{position:relative}
+.layout-menu-list{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;z-index:300}
+.layout-menu.open .layout-menu-list{display:block}
+.layout-menu-list button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font-body)}
+.layout-menu-list button:hover{background:var(--bg4);color:var(--gold)}
+.layout-menu-title{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:8px 10px 4px}
+.layout-menu-empty{font-size:12px;color:var(--text3);padding:8px 10px;line-height:1.5}
+.layout-menu-sep{height:1px;background:var(--border);margin:6px 4px}
+/* Mode édition : contrôles visibles, cartes repérables */
+.layout-edit-hint{display:none;margin:0 0 18px;padding:8px 14px;border:1px dashed var(--gold);border-radius:8px;font-size:12px;color:var(--gold)}
+.layout-handle,.layout-remove,.layout-resize,.layout-size-badge{display:none}
+.synthese-editing .layout-edit-hint{display:block}
+.synthese-editing [data-kpi],.synthese-editing [data-block]{position:relative;outline:1px dashed var(--border2);outline-offset:4px}
+.synthese-editing #kpiGrid{margin-top:14px}
+.synthese-editing [data-kpi]:hover,.synthese-editing [data-block]:hover{outline-color:var(--gold)}
+.synthese-editing .layout-handle,.synthese-editing .layout-remove{display:flex}
+.synthese-editing .layout-resize{display:block}
+.layout-handle{position:absolute;top:-12px;left:12px;height:24px;min-width:34px;align-items:center;justify-content:center;padding:0 8px;border-radius:12px;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-size:14px;cursor:grab;touch-action:none;z-index:5;user-select:none}
+.layout-handle:hover{color:var(--gold);border-color:var(--gold)}
+.layout-remove{position:absolute;top:-12px;right:12px;width:24px;height:24px;align-items:center;justify-content:center;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);color:var(--red);font-size:11px;cursor:pointer;z-index:5;padding:0}
+.layout-remove:hover{background:var(--red);border-color:var(--red);color:#fff}
+@media(hover:hover){.synthese-editing [data-kpi],.synthese-editing [data-block]{cursor:grab}}
+.layout-resize{position:absolute;right:3px;bottom:3px;width:18px;height:18px;cursor:nwse-resize;touch-action:none;z-index:5;border-radius:0 0 8px 0;
+  background:linear-gradient(135deg,transparent 0 55%,var(--gold) 55% 62%,transparent 62% 72%,var(--gold) 72% 79%,transparent 79%)}
+.layout-size-badge{position:absolute;right:26px;bottom:6px;padding:2px 8px;border-radius:10px;background:var(--gold);color:#fff;font-family:var(--font-mono);font-size:10px;z-index:5}
+.is-resizing .layout-size-badge{display:block}
+.layout-dragging{opacity:.35;outline:2px dashed var(--gold)!important}
+.layout-ghost{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-130%);padding:7px 14px;border-radius:18px;background:var(--gold);color:#fff;font-size:12px;font-weight:500;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+body.layout-drag-active,body.layout-drag-active *{cursor:grabbing!important;user-select:none}
+body.layout-resize-active,body.layout-resize-active *{cursor:nwse-resize!important;user-select:none}
+@keyframes layoutFlash{0%,40%{outline:2px solid var(--gold);outline-offset:4px}100%{outline-color:transparent}}
+.layout-flash{animation:layoutFlash 1.4s ease}
 
 @media(max-width:900px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(-100%);transition:transform .2s ease;z-index:130}
@@ -287,7 +316,13 @@ select.filter-active{border-color:var(--gold);color:var(--gold)}
   .mobile-title{font-family:var(--font-display);font-size:16px;color:var(--text);flex:1}
 
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
-  .grid-2,.grid-3,.grid-4,.grid-5,.synthese-blocks{grid-template-columns:1fr}
+  .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr}
+  /* Synthèse sur mobile : une colonne, hauteur naturelle (largeur/hauteur choisies ignorées) */
+  .synthese-blocks{grid-template-columns:1fr}
+  .synthese-blocks>.synthese-block{grid-column:1/-1!important}
+  .synthese-block.has-h{height:auto;display:block}
+  .synthese-block.has-h>.chart-wrap{height:220px!important}
+  .synthese-editing .layout-resize{display:none}
   .immo-metrics{grid-template-columns:repeat(2,1fr)}
   main{padding:16px}
 }
